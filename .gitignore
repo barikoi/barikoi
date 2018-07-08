@@ -1,0 +1,8 @@
+/var/www/html/ethikana/storage/custom/places.index
+/storage/custom/name.index
+/storage/custom/nearby.index
+/storage/custom/ucode.index
+.env
+/database/data.sqlite
+/config/database.php
+
