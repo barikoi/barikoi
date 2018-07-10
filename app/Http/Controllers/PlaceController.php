@@ -737,7 +737,7 @@ class PlaceController extends Controller
          $lat = $request->latitude;
          $lon = $request->longitude;
        //  $id = $request->user()->id;
-      /*   $result = Place::with('images')
+        $result = Place::with('images')
               ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
              //->where('pType', '=','Food')
               ->having('distance','<',0.5)
@@ -746,11 +746,11 @@ class PlaceController extends Controller
               ->orderBy('distance')
               ->limit(30)
               ->get();
-        */ DB::table('analytics')->increment('search_count',1);
+         DB::table('analytics')->increment('search_count',1);
          DB::table('users')->where('id',$request->user()->id)->update(['user_last_lon'=>$lon,'user_last_lat'=>$lat]);
 
 
-       $currentLocation = [
+      /* $currentLocation = [
                'longitude' => $lon,
                'latitude'  => $lat,
            ];
@@ -769,8 +769,8 @@ class PlaceController extends Controller
            $candyShopIndex->selectIndex('nearby.index');
            $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
            $place = Place::with('images')->whereIn('id', $candyShops['ids'])->whereNotIn('pType', ['Residential','Vacant'])->get();
-
-           return response()->Json($place);
+*/
+           return response()->Json($result);
 
        }
 
@@ -1125,7 +1125,7 @@ class PlaceController extends Controller
       $place->longitude = $request->longitude;
       $place->latitude = $request->latitude;
       $place->save();
-    
+
 
       return response()->json(['Message '=>' Updated']);
     }
