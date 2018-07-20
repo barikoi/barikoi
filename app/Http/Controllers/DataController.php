@@ -84,8 +84,9 @@ class DataController extends Controller {
             'places'=> $places
           ]);
 
-
     }
+
+
 
 
   /*
@@ -108,6 +109,22 @@ class DataController extends Controller {
       {
         DB::select("SELECT Address, area, REPLACE(Address, 'Road 103', 'Bir Uttam Shamsul Alam Avenue') from places WHERE Address LIKE '%Road 103%' AND area = 'Kakrail'");
       }
+
+      public function FixDataInsidePolygon(Request $request)
+      {
+        $polygon =$request->polygon;
+        $address = $request->address;
+
+        $places = DB::select("UPDATE places_2 SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,('$polygon') ) and Address LIKE '%$address%'");
+
+          return response()->json([
+              'Total' => count($places),
+              'places'=> $places
+            ]);
+
+
+      }
+
 
       /*
       Transfer data to new column

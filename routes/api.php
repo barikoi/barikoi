@@ -79,6 +79,7 @@ $api->version('v1', function ($api) {
   $api->post('insert/area','App\Http\Controllers\DataController@InsertArea');
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
+  $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
 
 
 

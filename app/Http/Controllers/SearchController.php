@@ -685,7 +685,8 @@ class SearchController extends Controller
 
   public function APIsearch(Request $request)
    {
-    /*  $fuzzy_prefix_length  = 2;
+     /*
+      $fuzzy_prefix_length  = 2;
       $fuzzy_max_expansions = 50;
       $fuzzy_distance       = 4;
       $tnt = new TNTSearch;
@@ -706,14 +707,14 @@ class SearchController extends Controller
      //$query = $this->expand($request->get('search'));
 
 
-    //$res = $tnt->search($search,20);
+    $res = $tnt->search($search,20);
+*/
 
-    */
     $startTimer = microtime(true);
     $place = DB::connection('sqlite')->table('places_3')
     ->where('new_address','Like','%'.$request->search.'%')
     ->orWhere('alternate_address','Like','%'.$request->search.'%')
-    ->limit(15)->get(['Address','area','city','postCode','uCode','route_description','longitude','latitude']);
+    ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
     //$place = DB::connection('sqlite')->select("SELECT * FROM PLACES WHERE Address LIKE '%House 4, Road 1, Block C, Section 2%'")->limit(10);
     //$res = $tnt->search($request->search,20);
     $q = $request->search;
@@ -726,7 +727,7 @@ class SearchController extends Controller
       ->select('*')
       ->where('new_address','Like','%'.$q.'%')
       ->orWhere('alternate_address','Like','%'.$q.'%')
-      ->limit(15)->get();
+      ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
       if (count($place)===0){
         $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
         $x = explode(" ",$str);
@@ -735,7 +736,7 @@ class SearchController extends Controller
          ->select('*')
          ->where('new_address','Like','%'.$y.'%')
          ->orWhere('alternate_address','Like','%'.$y.'%')
-         ->limit(15)->get();
+         ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
 
          if (count($place)===0) {
 
@@ -746,11 +747,12 @@ class SearchController extends Controller
                ->select('*')
                ->where('new_address','Like','%'.$y.'%')
                ->orWhere('alternate_address','Like','%'.$y.'%')
-               ->limit(20)->get();
+               ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
             }
 
 
       }
+
 
     }
 
@@ -762,7 +764,7 @@ class SearchController extends Controller
      //$stopTimer = microtime(true);
 
       $stopTimer = microtime(true);
-       return response()->json(['sub'=>round($stopTimer - $startTimer, 7) *1000,'places'=>$place],200); //round($stopTimer - $startTimer, 7) *1000 ." ms" ]);
+      return response()->json(['sub'=>round($stopTimer - $startTimer, 7) *1000,'places'=>$place],200); //round($stopTimer - $startTimer, 7) *1000 ." ms" ]);
 
 
    }
@@ -787,5 +789,56 @@ class SearchController extends Controller
      return $result->toJson();
 }
 
+public function TestFuzzySearch($data)
+{
+
+    // input misspelled word
+    $input = $data;
+
+
+    // array of words to check against
+    $words  = array('Dastarkhana','Ific', 'Brac', 'Mutual', 'House', 'Bank','Block','Section','Sector');
+
+    // no shortest distance found, yet
+    $shortest = -1;
+
+    // loop through words to find the closest
+    foreach ($words as $word) {
+
+        // calculate the distance between the input word,
+        // and the current word
+        $lev = levenshtein($input, $word);
+
+        // check for an exact match
+        if ($lev == 0) {
+
+            // closest word is this one (exact match)
+            $closest = $word;
+            $shortest = 0;
+
+            // break out of the loop; we've found an exact match
+            break;
+        }
+
+        // if this distance is less than the next found shortest
+        // distance, OR if a next shortest word has not yet been found
+        if ($lev <= $shortest || $shortest < 0) {
+            // set the closest match, and shortest distance
+            $closest  = $word;
+            $shortest = $lev;
+        }
+    }
+
+    echo "Input word: $input\n";
+    if ($shortest == 0) {
+        return response()->json(["Result"=> $closest]);
+    } else {
+
+        return response()->json(["Result"=> "Did you mean: $closest"]);
+    }
+
+
+
+}// end of function
 
 }

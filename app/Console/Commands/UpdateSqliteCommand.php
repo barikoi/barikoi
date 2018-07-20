@@ -37,6 +37,7 @@ class UpdateSqliteCommand extends Command
      */
     public function handle()
     {
+      $startTimer = microtime(true);
       $this->line("\nEmptying the database for you . . . ");
       DB::connection('sqlite')->table('places_3')->where('Address','LIKE','%%')->delete();
 
@@ -45,6 +46,7 @@ class UpdateSqliteCommand extends Command
       foreach($c1 as $record){
 
       DB::connection('sqlite')->table('places_3')->insert(get_object_vars($record));
+      $stopTimer = microtime(true);
 
       }
 

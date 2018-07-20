@@ -5,4 +5,4 @@
 .env
 /database/data.sqlite
 /config/database.php
-
+/database/databackup.sqlite
