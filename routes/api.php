@@ -61,7 +61,7 @@ $api->version('v1', function ($api) {
 //This route generate random Words
   $api->get('/word',[
     'as' => 'random.words',
-    'uses' => 'App\Http\Controllers\Auth\AuthTest0Controller@word',
+    'uses' => 'App\Http\Controllers\PlaceController@word',
   ]);
 //Public Tourism api
   $api->get('/ghurbokoi','App\Http\Controllers\PlaceController@tourism');
@@ -336,7 +336,7 @@ $api->version('v1', function ($api) {
 
 
 ///================================Auth api starts ===========================================================================
-
+  $api->get('get/custom/polygon','App\Http\Controllers\DataController@SearchInPolygon');
     $api->group(['middleware' => 'throttle:100,1'], function ($api)  {
 
       $api->get('geo','App\Http\Controllers\testController@NewPlace');
@@ -344,6 +344,7 @@ $api->version('v1', function ($api) {
 
       $api->get('area/polygon','App\Http\Controllers\DataController@getAreaDataPolygonWise');
       $api->get('get/area','App\Http\Controllers\DataController@getArea');
+
 
       /*@@ data controller address
       */
@@ -364,18 +365,18 @@ $api->version('v1', function ($api) {
       //Test Routes: with images
       $api->post('/test/auth/place/newplace',[
         'as' => 'test.api.auth.place.new',
-        'uses' => 'App\Http\Controllers\Auth\AuthTest0Controller@authAddNewPlace',
+        'uses' => 'App\Http\Controllers\PlaceController@authAddNewPlace',
       ]);
       //
       $api->post('/test/auth/place/newplace/mapper',[
         'as' => 'test.api.auth.place.new.mapper',
-        'uses' => 'App\Http\Controllers\Auth\AuthTest0Controller@XauthAddNewPlace',
+        'uses' => 'App\Http\Controllers\PlaceController@XauthAddNewPlace',
       ]);
 
 
       $api->post('/test/auth/place/newplacecustom',[
         'as' => 'test.api.auth.place.newcustom',
-        'uses' => 'App\Http\Controllers\Auth\AuthTest0Controller@authAddCustomPlace',
+        'uses' => 'App\Http\Controllers\PlaceController@authAddCustomPlace',
       ]);
       //Test Routes
 

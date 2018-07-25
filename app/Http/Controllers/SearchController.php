@@ -622,9 +622,9 @@ class SearchController extends Controller
   }
   public function getTntsearch(Request $request)
   {
-     /*$fuzzy_prefix_length  = 4;
+     $fuzzy_prefix_length  = 4;
      $fuzzy_max_expansions = 50;
-     $fuzzy_distance       = 2;*/
+     $fuzzy_distance       = 2;
      $tnt = new TNTSearch;
 
     $tnt->loadConfig([
@@ -638,7 +638,7 @@ class SearchController extends Controller
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
-    //$tnt->asYouType = true;
+    $tnt->asYouType = true;
 
     //$query = $this->expand($request->get('search'));
     //$res = $tnt->searchBoolean(str_replace(' ', '+',$request->search),20);
@@ -685,7 +685,7 @@ class SearchController extends Controller
 
   public function APIsearch(Request $request)
    {
-     /*
+
       $fuzzy_prefix_length  = 2;
       $fuzzy_max_expansions = 50;
       $fuzzy_distance       = 4;
@@ -707,9 +707,6 @@ class SearchController extends Controller
      //$query = $this->expand($request->get('search'));
 
 
-    $res = $tnt->search($search,20);
-*/
-
     $startTimer = microtime(true);
     $place = DB::connection('sqlite')->table('places_3')
     ->where('new_address','Like','%'.$request->search.'%')
@@ -728,6 +725,16 @@ class SearchController extends Controller
       ->where('new_address','Like','%'.$q.'%')
       ->orWhere('alternate_address','Like','%'.$q.'%')
       ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+      if (count($place)===0) {
+
+            $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+            $x = explode(" ",$str);
+            $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+            $place = DB::connection('sqlite')->table('places_3')
+            ->select('*')
+            ->where('new_address','Like','%'.$y.'%')
+            ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
       if (count($place)===0){
         $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
         $x = explode(" ",$str);
@@ -740,21 +747,24 @@ class SearchController extends Controller
 
          if (count($place)===0) {
 
-            $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
-              $x = explode(" ",$str);
-              $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
-              $place = DB::connection('sqlite')->table('places_3')
-               ->select('*')
-               ->where('new_address','Like','%'.$y.'%')
-               ->orWhere('alternate_address','Like','%'.$y.'%')
-               ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-            }
-
-
+                   $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+                   $x = explode(" ",$str);
+                   $y=''.$x[sizeof($x)-1].'';
+                   $place = DB::connection('sqlite')->table('places_3')
+                    ->select('*')
+                    ->where('new_address','Like','%'.$y.'%')
+                    ->orWhere('alternate_address','Like','%'.$y.'%')
+                    ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+          if (count($place)===0) {
+                 $res = $tnt->search($search,50);
+                 $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+        }
+       }
       }
+     }
+   }
 
 
-    }
 
      DB::table('analytics')->increment('search_count',1);
       //$startTimer = microtime(true);
