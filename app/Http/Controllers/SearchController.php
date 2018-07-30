@@ -15,6 +15,7 @@ use App\analytics;
 use App\Image;
 use App\placestwo;
 use App\imagetwo;
+use App\Searchlytics;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -725,7 +726,7 @@ class SearchController extends Controller
       ->where('new_address','Like','%'.$q.'%')
       ->orWhere('alternate_address','Like','%'.$q.'%')
       ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-      if (count($place)===0) {
+      if (count($place)>=0) {
 
             $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
             $x = explode(" ",$str);
@@ -735,7 +736,7 @@ class SearchController extends Controller
             ->where('new_address','Like','%'.$y.'%')
             ->orWhere('alternate_address','Like','%'.$y.'%')
             ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-      if (count($place)===0){
+      if (count($place)>=0){
         $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
         $x = explode(" ",$str);
         $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
@@ -747,16 +748,16 @@ class SearchController extends Controller
 
          if (count($place)===0) {
 
-                   $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
-                   $x = explode(" ",$str);
-                   $y=''.$x[sizeof($x)-1].'';
-                   $place = DB::connection('sqlite')->table('places_3')
+                $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+                $x = explode(" ",$str);
+                $y=''.$x[sizeof($x)-1].'';
+                $place = DB::connection('sqlite')->table('places_3')
                     ->select('*')
                     ->where('new_address','Like','%'.$y.'%')
                     ->orWhere('alternate_address','Like','%'.$y.'%')
                     ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-          if (count($place)===0) {
-                 $res = $tnt->search($search,50);
+          if (count($place)===0 || count($place)>=20) {
+                 $res = $tnt->Booleansearch($search,50);
                  $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
         }
        }
@@ -764,9 +765,7 @@ class SearchController extends Controller
      }
    }
 
-
-
-     DB::table('analytics')->increment('search_count',1);
+    DB::table('analytics')->increment('search_count',1);
       //$startTimer = microtime(true);
      //$place = Place::with('images')->where('Address','LIKE','%'.$request->search.'%')->limit(10)->get();
      //$place = DB::raw("SELECT * FROM places WHERE id IN $res ORDER BY FIELD(id, ".implode(",",$res).");");
@@ -776,6 +775,80 @@ class SearchController extends Controller
       $stopTimer = microtime(true);
       return response()->json(['sub'=>round($stopTimer - $startTimer, 7) *1000,'places'=>$place],200); //round($stopTimer - $startTimer, 7) *1000 ." ms" ]);
 
+
+   }
+
+   public function testSearch(Request $request)
+   {
+     $fuzzy_prefix_length  = 2;
+     $fuzzy_max_expansions = 50;
+     $fuzzy_distance       = 2;
+     $tnt = new TNTSearch;
+
+    $tnt->loadConfig([
+        'driver'    => 'mysql',
+        'host'      => 'localhost',
+        'database'  => 'ethikana',
+        'username'  => 'root',
+        'password'  => 'root',
+        'storage'   => '/var/www/html/ethikana/storage/custom/'
+    ]);
+
+    $tnt->selectIndex("places.index");
+    $tnt->fuzziness = true;
+    $tnt->asYouType = true;
+
+
+     $q = $request->search;
+
+    DB::table('Searchlytics')->insert(['query' => $q]);
+
+
+
+
+
+     if(Place::where('uCode','=',$q)->exists()){
+       $place=Place::with('images')->where('uCode','=',$q)->get();
+     }else{
+     $q = preg_replace("/[-]/", " ", $q);
+     $q = preg_replace('/\s+/', ' ',$q);
+     $y = '';
+     $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+     $x = explode(" ",$str);
+     $size = sizeof($x);
+     $place = DB::connection('sqlite')->table('places_3')
+     ->where('new_address','Like','%'.$q.'%')
+     ->orWhere('alternate_address','Like','%'.$q.'%')
+     ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+
+     if (count($place)==0) {
+
+     if ($size >=6)
+     {
+       $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+       $place = DB::connection('sqlite')->table('places_3')
+        ->select('*')
+        ->where('new_address','Like','%'.$y.'%')
+        ->orWhere('alternate_address','Like','%'.$y.'%')
+        ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+      }
+      if ($size <= 4) {
+        $y=''.$x[sizeof($x)-1].'';
+        $place = DB::connection('sqlite')->table('places_3')
+         ->select('*')
+         ->where('new_address','Like','%'.$y.'%')
+         ->orWhere('alternate_address','Like','%'.$y.'%')
+         ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+         if(count($place)>=20) {
+           $res = $tnt->searchBoolean($q,50);
+           $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+
+         }
+       }
+     }
+   }
+
+     return response()->json(['places'=>$place]);
 
    }
 

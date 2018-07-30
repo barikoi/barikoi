@@ -15,7 +15,7 @@ Route::get('/live', function () {
 });*/
 $api = $app->make(Dingo\Api\Routing\Router::class);
 
-$api->version('v1', function ($api) {
+$api->version('v1',  function ($api) {
 
       //   $api->post('/image', [
       //   'as' => 'image.singe',
@@ -80,9 +80,12 @@ $api->version('v1', function ($api) {
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
+  $api->group([
+      'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 5
+  ], function ($api) {
+  $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
 
-
-
+});
 
   //end, test routes//
   //barikoi pool-bot
@@ -350,7 +353,7 @@ $api->version('v1', function ($api) {
       */
 
     });
-    $api->post('/tnt/search','App\Http\Controllers\SearchController@getTntsearch');
+    $api->post('/tnt/search','App\Http\Controllers\SearchController@testsearch');
       $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
     $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
 
@@ -402,11 +405,11 @@ $api->version('v1', function ($api) {
       ]);
 
       //analytics
-    /*  $api->get('/analytics',[
-        'as' => 'place.analytics',
-        'uses' => 'App\Http\Controllers\Auth\PlaceController@analytics',
+      $api->get('/analytics',[
+        'as' => 'place.collection.analytics',
+        'uses' => 'App\Http\Controllers\PlaceController@analytics',
       ]);
-*/
+
       $api->post('/auth/UpdatePass',[
         'as' => 'user.updatePass',
         'uses' => 'App\Http\Controllers\Auth\AuthController@UpdatePass',
@@ -561,7 +564,7 @@ $api->version('v1', function ($api) {
       //ADN: Update Place by Place Code
       $api->post('/auth/place/update/{placeid}',[
         'as' => 'api.auth.places.update',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@halnagadMyPlace',
+        'uses' => 'App\Http\Controllers\PlaceController@halnagadMyPlace',
       ]);
 
       //ADN:Delete place by BariKoi code
@@ -1008,3 +1011,12 @@ $api->version('v2', ['namespace' => 'App\Http\Controllers'], function ($api) {
     // test
     $api->post('barikoi/search','SearchController@getTntsearch');
 });
+
+/**
+ * Routes for resource searchlytics-controller
+ */
+$app->get('searchlytics-controller', 'SearchlyticsControllersController@all');
+$app->get('searchlytics-controller/{id}', 'SearchlyticsControllersController@get');
+$app->post('searchlytics-controller', 'SearchlyticsControllersController@add');
+$app->put('searchlytics-controller/{id}', 'SearchlyticsControllersController@put');
+$app->delete('searchlytics-controller/{id}', 'SearchlyticsControllersController@remove');

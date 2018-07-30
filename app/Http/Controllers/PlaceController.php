@@ -16,6 +16,7 @@ use App\PlaceSubType;
 use App\SavedPlace;
 use App\Referral;
 use App\analytics;
+use App\Image;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -1158,6 +1159,118 @@ class PlaceController extends Controller
 
       return response()->json('Done');
     }
+    //Update My Place
+public function halnagadMyPlace(Request $request,$id){
+
+    $userId = $request->user()->id;
+    $places = Place::where('uCode','=',$id)->orWhere('id',$id)->first();
+    $image=Image::where('pid',$places->id)->delete();
+
+   if ($request->has('longitude')) {
+        $places->longitude = $request->longitude;
+    }
+    if ($request->has('latitude')) {
+        $places->latitude = $request->latitude;
+    }
+    if ($request->has('Address')) {
+      $places->Address = $request->Address;
+    }
+    if ($request->has('city')) {
+      $places->city = $request->city;
+    }
+    if ($request->has('area')) {
+      $places->area = $request->area;
+    }
+
+  //  if ($request->has('user_id')) {
+    //  $places->user_id = $userId;
+    //}
+    if ($request->has('postCode')) {
+      $places->postCode = $request->postCode;
+    }
+    if ($request->has('flag')) {
+      $places->flag = $request->flag;
+    }
+
+    if ($request->has('pType')) {
+      $places->pType = $request->pType;
+    }
+    if ($request->has('subType')) {
+      $places->subType = $request->subType;
+    }
+    if ($request->has('route_description')){
+      $places->route_description = $request->route_description;
+    }
+    if ($request->has('contact_person_name')) {
+      $places->contact_person_name = $request->contact_person_name;
+    }
+
+    if ($request->has('contact_person_phone')) {
+        $places->contact_person_phone = $request->contact_person_phone;
+    }
+
+    if ($request->has('road_details')){
+      $places->road_details = $request->road_details;
+    }
+    if ($request->has('number_of_floors')){
+      $places->number_of_floors = $request->number_of_floors;
+    }
+
+    $places->save();
+
+    if ($request->has('images'))
+    {
+      $placeId=$places->id; //get latest the places id
+      $relatedTo ='place';
+      $client_id = '55c393c2e121b9f';
+      $url = 'https://api.imgur.com/3/image';
+      $headers = array("Authorization: Client-ID $client_id");
+      //source:
+      //http://stackoverflow.com/questions/17269448/using-imgur-api-v3-to-upload-images-anonymously-using-php?rq=1
+      $recivedFiles = $request->get('images');
+      //$file_count = count($reciveFile);
+    // start count how many uploaded
+      $uploadcount = count($recivedFiles);
+      //return $uploadcount;
+      $file = $recivedFiles;
+            //$img = file_get_contents($file);
+            //$imgarray  = array('image' => base64_encode($file),'title'=> $title);
+            $imgarray  = array('image' => $file);
+            $curl = curl_init();
+            curl_setopt_array($curl, array(
+               CURLOPT_URL=> $url,
+               CURLOPT_TIMEOUT => 30,
+               CURLOPT_POST => 1,
+               CURLOPT_RETURNTRANSFER => 1,
+               CURLOPT_HTTPHEADER => $headers,
+               CURLOPT_POSTFIELDS => $imgarray
+            ));
+            $json_returned = curl_exec($curl); // blank response
+            $json_a=json_decode($json_returned ,true);
+            $theImageHash=$json_a['data']['id'];
+           // $theImageTitle=$json_a['data']['title'];
+            $theImageRemove=$json_a['data']['deletehash'];
+            $theImageLink=$json_a['data']['link'];
+            curl_close ($curl);
+
+            //save image info in images table;
+            $saveImage=new Image;
+            $saveImage->user_id=$userId;
+            $saveImage->pid=$placeId;
+            $saveImage->imageGetHash=$theImageHash;
+            //$saveImage->imageTitle=$theImageTitle;
+            $saveImage->imageRemoveHash=$theImageRemove;
+            $saveImage->imageLink=$theImageLink;
+            $saveImage->relatedTo=$relatedTo;
+            $saveImage->save();
+            $uploadcount--;
+
+
+    }
+
+    return response()->json('Updated');
+
+}
     //update
     public function halnagad(Request $request,$barikoicode){
       $places = Place::where('uCode','=',$barikoicode)->first();
@@ -1456,12 +1569,12 @@ class PlaceController extends Controller
 
           }
 
-  public function analytics()
+  /*public function analytics()
     {
       $numbers=analytics::all();
       return $numbers->toJson();
     }
-
+    */
     public function savedPlaces(Request $request)
     {
       $saved = new SavedPlace;
@@ -1847,7 +1960,7 @@ class PlaceController extends Controller
   @@ Analytics
   */
 
-/*  public function analytics()
+ public function analytics()
   {
     /*$user = JWTAuth::parseToken()->authenticate();
     $userId = $user->id;
@@ -1859,19 +1972,19 @@ class PlaceController extends Controller
     }else{
       return response()->json('This User is not Allowed To Access This Resource');
     }
-
+    */
     $today = Carbon::today()->toDateTimeString();
     $yesterday = Carbon::yesterday()->toDateTimeString();
-  //  $data = Place::whereDate('created_at','=',$today)->count();
-  //  $yesterdayData = Place::whereDate('created_at','=',$yesterday)->count();
-  //  $lastsevenday = Carbon::today()->subDays(6);
-  //  $weekbeforelastweek = Carbon::today()->subDays(12);
-  //  $before2weeks = Carbon::today()->subDays(18);
-  //  $lastWeek = Place::whereBetween('created_at',[$lastsevenday,$today])->count();
-  //  $beforelastWeek = Place::whereBetween('created_at',[$weekbeforelastweek,$lastsevenday])->count();
-  //  $twoweeksago = Place::whereBetween('created_at',[$before2weeks,$weekbeforelastweek])->count();
+    $data = DB::connection('sqlite')->table('places_3')->whereDate('created_at','=',$today)->count();
+    $yesterdayData = DB::connection('sqlite')->table('places_3')->whereDate('created_at','=',$yesterday)->count();
+    $lastsevenday = Carbon::today()->subDays(6);
+    $weekbeforelastweek = Carbon::today()->subDays(12);
+    $before2weeks = Carbon::today()->subDays(18);
+    $lastWeek = DB::connection('sqlite')->table('places_3')->whereBetween('created_at',[$lastsevenday,$today])->count();
+    $beforelastWeek = DB::connection('sqlite')->table('places_3')->whereBetween('created_at',[$weekbeforelastweek,$lastsevenday])->count();
+    $twoweeksago = DB::connection('sqlite')->table('places_3')->whereBetween('created_at',[$before2weeks,$weekbeforelastweek])->count();
     $contributor = User::where('isAllowed',0)->count();
-  /*  $results = DB::select(
+    /*$results = DB::select(
               "SELECT user_id, sum(count) as total
               FROM
               (SELECT
@@ -1884,13 +1997,13 @@ class PlaceController extends Controller
               COUNT(Address) >1)
               AS
               T");
-
+    */
   //  $names = array_pluck($results, 'total');
     //$y = implode('',$names);
     $totalSearch = analytics::select('search_count')->get();
-    $totalCount = Place::select('id')->count();
-    $publicCount = Place::where('flag',1)->count();
-    $privateCount = Place::where('flag',0)->count();
+    $totalCount = DB::connection('sqlite')->table('places_3')->select('id')->count();
+    $publicCount = DB::connection('sqlite')->table('places_3')->where('flag',1)->count();
+    $privateCount = DB::connection('sqlite')->table('places_3')->where('flag',0)->count();
 
     return response()->json([
       'Total Code' =>$totalCount,
@@ -1898,15 +2011,20 @@ class PlaceController extends Controller
       'Private Code' => $privateCount,
       'search_count' => $totalSearch,
     //  'Duplicates'   => $y,
-  //    'Todays' => $data,
-    //  'Yesterday'=>$yesterdayData,
-    //  'lastWeek' => $lastWeek,
-    //  'weekBeforeLastWeek' => $beforelastWeek,
-    //  'twoweeksago' => $twoweeksago,
+      'Todays' => $data,
+      'Yesterday'=>$yesterdayData,
+      'lastWeek' => $lastWeek,
+      'weekBeforeLastWeek' => $beforelastWeek,
+      'twoweeksago' => $twoweeksago,
       'contributor' => $contributor,
     ]);
-  }*/
+  }
 
+
+/*
+
+ @SaveFiles
+*/
   public function saveFile($file)
     {
         $filename = str_replace(' ', '_', $file->getClientOriginalName());
