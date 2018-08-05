@@ -81,7 +81,7 @@ $api->version('v1',  function ($api) {
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 5
+      'middleware' => 'api.throttle', 'limit' => 10000, 'expires' => 1440
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
 
@@ -520,11 +520,7 @@ $api->version('v1',  function ($api) {
       $api->post('/handymama','App\Http\Controllers\testController@HandyMama');
       $api->get('/bikerental','App\Http\Controllers\testController@BikeRental');
 
-      // //ADN:Change My Password
-      // $api->post('/auth/password/change',[
-      //   'uses' => 'App\Http\Controllers\Auth\AuthController@changePasswordByUser',
-      //   'as' => 'auth.password.change',
-      // ]);
+
       // data manipulation
       $api->get('replace','App\Http\Controllers\DataController@replace');
       $api->get('updateword','App\Http\Controllers\DataController@UpdateWordZone');
@@ -545,15 +541,6 @@ $api->version('v1',  function ($api) {
       $api->get('/public/find/nearby/by/catagory','App\Http\Controllers\PlaceController@amarashpashCatagorized');
       //**********
 
-      $api->post('/auth/place/newplace',[
-        'as' => 'api.auth.place.new',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authAddNewPlace',
-      ]);
-
-      $api->post('/auth/place/newplacecustom',[
-        'as' => 'api.auth.place.new',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authAddCustomPlace',
-      ]);
 
       //search for client:app
       $api->get('/auth/search/{bcode}',[
@@ -570,7 +557,7 @@ $api->version('v1',  function ($api) {
       //ADN:Delete place by BariKoi code
       $api->get('/auth/place/delete/{barikoicode}',[
         'as' => 'auth.places.delete',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@mucheFeliMyPlace',
+        'uses' => 'App\Http\Controllers\PlaceController@mucheFeliMyPlace',
       ]);
 
     //delete place by place id()

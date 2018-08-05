@@ -344,13 +344,6 @@ class PlaceController extends Controller
 
     $user = JWTAuth::parseToken()->authenticate();
     $userId = $user->id;
-    //char part
-    // $charactersChar = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    // $charactersCharLength = strlen($charactersChar);
-    // $randomStringChar = '';
-    // for ($i = 0; $i < 4; $i++) {
-    //     $randomStringChar .= $charactersChar[rand(0, $charactersCharLength - 1)];
-    // }
 
     $randomStringChar=$this->word();
     //number part
@@ -363,35 +356,9 @@ class PlaceController extends Controller
 
     $ucode =  ''.$randomStringChar.''.$randomStringNum.'';
 
-    $lat = $request->latitude;
-    $lon = $request->longitude;
-    //check if it is private and less then 20 meter
-    if($request->flag==0){
-    $result = DB::table('places')
-         ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-        //->where('pType', '=','Food')
-         ->where('flag','=',0)
-         ->where('user_id','=',$userId) // same user can not add
-         ->having('distance','<',0.001) //another private place in 10 meter
-         ->get();
-     $message='Can not Add Another Private Place in 1 meter';
-    }
-    //check if it is public and less then 50 meter
-    if($request->flag==1){
+     $lat = $request->latitude;
+     $lon = $request->longitude;
 
-      $result = DB::table('places')
-         ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-        //->where('pType', '=','Food')
-         ->where('flag','=',1)
-         ->having('distance','<',0.001) //no one 5 meter for public
-         ->get();
-      $message='A Public Place is Available in 1 meter.';
-    }
-    /*return response()->json([
-        'Count' => $result->count()
-        ]);*/
-    if(count($result) === 0)
-    {
       $input = new Place;
       $input->longitude = $lon;
       $input->latitude = $lat;
@@ -530,13 +497,7 @@ class PlaceController extends Controller
         'image_uplod_messages'=>$message1
        // 'place'=>$placeId
         ]);
-    }
-    else{
-      //can't add places in 20/50 mter, return a message
-      return response()->json([
-        'message' => $message
-        ]);
-    }
+
   }
 
   //*******ADD PLACE with CUSTOM CODE************************
@@ -1152,6 +1113,14 @@ class PlaceController extends Controller
       return $places->toJson();
     }
     //delete
+
+    public function mucheFeliMyPlace(Request $request,$barikoiCode)
+    {
+      Place::where('uCode','=',$barikoiCode)->delete();
+      return response()->json('Place Deleted!');
+
+    }
+
     public function mucheFeli($barikoicode)
     {
       $places = Place::where('uCode','=',$barikoicode)->first();
@@ -1528,7 +1497,7 @@ public function halnagadMyPlace(Request $request,$id){
                  ->orderBy('distance')
                  ->get();*/
           //  $result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*1000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+($distance/111)), ($lon+($distance/111))), point(($lat-($distance/111)),( $lon-($distance/111))))), location) order by distance_in_meters");
-            $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, ST_AsText(location)
+            $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
             FROM places_2
             WHERE ST_Contains( ST_MakeEnvelope(
                            Point(($lon+($distance/111)), ($lat+($distance/111))),
