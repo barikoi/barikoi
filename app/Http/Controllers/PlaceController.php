@@ -37,17 +37,7 @@ class PlaceController extends Controller
 {
     //
 
-    public function Register(Request $request){
-
-      $user = new User;
-      $user->name = $request->name;
-      $user->email = $request->email;
-      $user->password = bcrypt($request->password);
-      $user->save();
-
-      return response()->json('Welcome');
-
-    }
+  
     // generate strings
     public function generateRandomString($length = 10) {
       $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -1511,13 +1501,6 @@ public function halnagadMyPlace(Request $request,$id){
             $Religious= $this->measureDistance('Religious_Place',$distance,$lat,$lon);
             DB::table('analytics')->increment('search_count',1);
             $rg = $this->reverseGeocodeDash($lat,$lon);
-            $place = Place::findOrFail(130808);
-            $x = $place->longitude;
-            $y = $place->latitude;
-            //$gd = $this->Getdistance($lon,$lat,$x,$y);
-          //  $totalHouse = Place::where('pType', 'Residential')->count();
-          //  $totalShop = Place::where('pType', 'Shop')->count();
-          //  $totalFood = Place::where('pType', 'Food')->count();
 
         return response()->Json([
         'Your are Currently at or nearby' => $rg,
@@ -1834,13 +1817,37 @@ public function halnagadMyPlace(Request $request,$id){
         $candyShopIndex->selectIndex('nearby.index');
         $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
         $place = Place::whereIn('id', $candyShops['ids'])->limit(1)->get();
-*/
+ */
     //    return response()->Json($place);
     return response()->json($result);
   }
 
-  public function reverseGeocodeDash($lat,$lon)
+  public function reverseGeocodeDash($longitude,$latitude)
   {
+    $lat = $latitude;
+    $lon = $longitude;
+    $distance = 0.2;
+    //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
+    $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
+    FROM places_2
+    WHERE ST_Contains( ST_MakeEnvelope(
+                   Point(($lon+($distance/111)), ($lat+($distance/111))),
+                   Point(($lon-($distance/111)), ($lat-($distance/111)))
+                ), location )
+     ORDER BY distance_in_meters LIMIT 1");
+  /*  $result= Place::with('images')
+        ->select(DB::raw('Address,area,city, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
+        ->having('distance','<',1)
+        ->orderBy('distance')
+        ->limit(1)
+        ->get();*/
+    return $result;
+  }
+
+  public function reverseGeocodeNew(Request $request)
+  {
+    $lat = $request->latitude;
+    $lon = $request->longitude;
     $distance = 0.1;
     //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
     $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)

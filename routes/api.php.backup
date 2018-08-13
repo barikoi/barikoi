@@ -80,13 +80,10 @@ $api->version('v1',  function ($api) {
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
-
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 600, 'expires' => 1
+      'middleware' => 'api.throttle', 'limit' => 10000, 'expires' => 1440
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
-  $api->get('api/search/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
-  $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
 
 });
 
@@ -265,11 +262,10 @@ $api->version('v1',  function ($api) {
 
     //full text
 
-  /*  $api->post('/search',[
+    $api->post('/search',[
       'as' => 'search.fulltext',
       'uses' => 'App\Http\Controllers\SearchController@index',
     ]);
-  */
   //---------------------Business User Routes-----------------------//
     //Register a Business user: from "Admin panel" or "SignUp as a Business feature"
     $api->post('/business/register', [
@@ -343,8 +339,8 @@ $api->version('v1',  function ($api) {
 
 
 ///================================Auth api starts ===========================================================================
-    $api->get('get/custom/polygon','App\Http\Controllers\DataController@SearchInPolygon');
-      $api->group(['middleware' => 'throttle:100,1'], function ($api)  {
+  $api->get('get/custom/polygon','App\Http\Controllers\DataController@SearchInPolygon');
+    $api->group(['middleware' => 'throttle:100,1'], function ($api)  {
 
       $api->get('geo','App\Http\Controllers\testController@NewPlace');
       $api->get('poly','App\Http\Controllers\testController@TestPolygon');
@@ -358,7 +354,7 @@ $api->version('v1',  function ($api) {
 
     });
     $api->post('/tnt/search','App\Http\Controllers\SearchController@testsearch');
-
+      $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
     $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
 
     $api->get('get/area/by/polygon','App\Http\Controllers\DataController@getAreaByPolygon');
@@ -447,9 +443,8 @@ $api->version('v1',  function ($api) {
         'as' => 'api.auth.userid'
       ]);
 
-      /**
-      @@Delivery Koi Routes
-      **/
+      //============================================ Delivery Koi Routes =============================================
+
       $api->post('/order','App\Http\Controllers\DeliveryKoisController@PlaceOrder'); // Api for Placing Order
       $api->post('/order/dashboard','App\Http\Controllers\DeliveryKoisController@PlaceOrderDashBoard'); // Api for Placing Order
 
@@ -495,7 +490,22 @@ $api->version('v1',  function ($api) {
       //============================= Delivery koi Routes Ends ===============================================
       $api->get('/notification/all','App\Http\Controllers\DeliveryKoisController@notification');
 
+      //  //============================= RIDE Route ===============================================
 
+      $api->post('/ride/request/ride','App\Http\Controllers\RideTechsController@RequestRide'); // Offering a ride
+      $api->post('/ride/offer/ride','App\Http\Controllers\RideTechsController@OfferRide'); // Offering a Ride
+
+      // Request
+      $api->get('/ride/get/requested/rides','App\Http\Controllers\RideTechsController@ShowRequestedRides'); //
+      $api->get('/ride/get/requested/rides/by/user/{id}','App\Http\Controllers\RideTechsController@ShowRequestedRidesByUser');
+      $api->delete('/ride/delete/requested/ride/{id}','App\Http\Controllers\RideTechsController@DeleteRideRequest');
+
+      //Offer
+      $api->get('/ride/get/offer/rides','App\Http\Controllers\RideTechsController@ShowOfferedRides');
+      //RIDE analytics
+      $api->get('/ride/analytics','App\Http\Controllers\RideTechsController@RideAnalytics');
+
+      //============================= RIDE Routes Ends ===============================================
 
 
       //============================= contributors Routes  ====================================================
@@ -511,9 +521,7 @@ $api->version('v1',  function ($api) {
       $api->get('/bikerental','App\Http\Controllers\testController@BikeRental');
 
 
-      /**
-        @@data manipulation
-      **/
+      // data manipulation
       $api->get('replace','App\Http\Controllers\DataController@replace');
       $api->get('updateword','App\Http\Controllers\DataController@UpdateWordZone');
       $api->get('get/ward','App\Http\Controllers\PlaceController@getWard');
@@ -659,7 +667,35 @@ $api->version('v1',  function ($api) {
       //review-rating
       //save a review+rating for a place id
 
+      $api->post('/reviews/{pid}',[
+        'as' => 'all.reviews.',
+        'uses' => 'App\Http\Controllers\ReviewController@store',
+      ]);
 
+      $api->post('/reviews/update/{id}',[
+        'as' => 'upddate.reviews.',
+        'uses' => 'App\Http\Controllers\ReviewController@update',
+      ]);
+
+      $api->get('/offers/{pid}',[
+        'as' => 'get.business.offers',
+        'uses' => 'App\Http\Controllers\OfferController@show',
+      ]);
+
+      $api->post('/offers/{pid}',[
+        'as' => 'post.business.offers',
+        'uses' => 'App\Http\Controllers\OfferController@store',
+      ]);
+
+      $api->post('/offers/update/{id}',[
+        'as' => 'update.business.offers',
+        'uses' => 'App\Http\Controllers\OfferController@update',
+      ]);
+
+      $api->get('/offers/delete/{id}',[
+        'as' => 'delete.business.offers',
+        'uses' => 'App\Http\Controllers\OfferController@destroy',
+      ]);
       //search from app
       $api->get('/app/search/{nameorcode}',[
         'as' => 'app.searchby.nameorcode',
@@ -683,12 +719,8 @@ $api->version('v1',  function ($api) {
         'uses' => 'App\Http\Controllers\RewardsController@show',
       ]);
       #User Part Ends#
+    //Admin Part Starts
 
-
-    /*
-
-  Admin Part Starts
-  */
       $api->get('/get/count',[
         'as' => 'place.count',
         'uses' => 'App\Http\Controllers\PlaceController@count',
@@ -792,6 +824,130 @@ $api->version('v1',  function ($api) {
       ]);
 
 
+      //      //Add Business Details by Business User
+      // $api->post('/auth/business/AddDescription/{pid}',[
+      //   'as' => 'business.add.description',
+      //   'uses' => 'App\Http\Controllers\BusinessApiController@AddBusinessDescription',
+      // ]);
+
+      // //Show Business Details
+      // $api->get('/auth/business/ShowDescription/{pid}',[
+      //   'as' => 'business.show.description',
+      //   'uses' => 'App\Http\Controllers\BusinessApiController@ShowBusinessDescription',
+      // ]);
+
+            //review-rating
+      //save a review+rating for a place id
+
+      // $api->post('/reviews/{pid}',[
+      //   'as' => 'all.reviews.',
+      //   'uses' => 'App\Http\Controllers\ReviewController@store',
+      // ]);
+
+      // $api->post('/reviews/update/{id}',[
+      //   'as' => 'upddate.reviews.',
+      //   'uses' => 'App\Http\Controllers\ReviewController@update',
+      // ]);
+
+      //offers
+      //       $api->get('/offers/{pid}',[
+      //   'as' => 'get.business.offers',
+      //   'uses' => 'App\Http\Controllers\OfferController@show',
+      // ]);
+
+      // $api->post('/offers/{pid}',[
+      //   'as' => 'post.business.offers',
+      //   'uses' => 'App\Http\Controllers\OfferController@store',
+      // ]);
+
+      // $api->post('/offers/update/{id}',[
+      //   'as' => 'update.business.offers',
+      //   'uses' => 'App\Http\Controllers\OfferController@update',
+      // ]);
+
+      // $api->get('/offers/delete/{id}',[
+      //   'as' => 'delete.business.offers',
+      //   'uses' => 'App\Http\Controllers\OfferController@destroy',
+      // ]);
+
+      //Barikoi Pool//
+
+      //Pool//
+      //show all rides for a ride sharer
+      $api->get('/pool/user/rides/', [
+        'as' => 'users.ride.offer',
+        'uses' => 'App\Http\Controllers\PoolOfferRideController@showAllRides'
+      ]);
+      //show single ride details
+      $api->get('/pool/user/ride/', [
+        'as' => 'users.ride.offer.single',
+        'uses' => 'App\Http\Controllers\PoolOfferRideController@showRideDetails'
+      ]);
+      //vehicles owned by a user
+      $api->get('/pool/vehicles/', [
+        'as' => 'get.user.vehicles',
+        'uses' => 'App\Http\Controllers\PoolVehiclesController@index'
+      ]);
+
+      $api->post('/pool/vehicle/info', [
+        'as' => 'save.pool.driver.information',
+        'uses' => 'App\Http\Controllers\PoolVehiclesController@store'
+      ]);
+      // $api->get('/pool/vehicle/info', [
+      //   'as' => 'show.pool.driver.information',
+      //   'uses' => 'App\Http\Controllers\PoolVehiclesController@show'
+      // ]);
+      //Offer Ride
+      $api->get('/pool/can', [
+        'as' => 'ride.share.eligibility',
+        'uses' => 'App\Http\Controllers\PoolOfferRideController@eligibility'
+      ]);
+      //Additoonal user Info-Pool
+      $api->post('/pool/user/info', [
+        'as' => 'save.pool.user.additional.information',
+        'uses' => 'App\Http\Controllers\AdditionalUserInfoController@store'
+      ]);
+      $api->post('/pool/ride/', [
+        'as' => 'ride.share.post',
+        'uses' => 'App\Http\Controllers\PoolOfferRideController@store'
+      ]);
+      $api->post('/pool/ride/status', [
+        'as' => 'ride.share.status',
+        'uses' => 'App\Http\Controllers\PoolOfferRideController@updateActivation'
+      ]);
+//PoolRide- Ride Finder
+      $api->get('/pool/ride/search', [
+        'as' => 'ride.search',
+        'uses' => 'App\Http\Controllers\PoolRideController@index'
+      ]);
+      //show a particular ride details from Ride Seekers "Nearest Rides Menu"
+      $api->get('/pool/ride/', [
+        'as' => 'ride.details',
+        'uses' => 'App\Http\Controllers\PoolRideController@show'
+      ]);
+      //book ride
+      $api->post('/book/ride/', [
+        'as' => 'ride.details',
+        'uses' => 'App\Http\Controllers\PoolRideController@store'
+      ]);
+      //Admin- Manage Pool Related Activity
+      $api->get('/pool/providers/', [
+        'as' => 'pool.providers',
+        'uses' => 'App\Http\Controllers\UserManagementController@poolProvider'
+      ]);
+
+      $api->get('/vehicles/all/', [
+        'as' => 'vehicles.all',
+        'uses' => 'App\Http\Controllers\PoolManagementController@showAllVehicles'
+      ]);
+      $api->post('/vehicle/stat/', [
+        'as' => 'vehicle.stats.update',
+        'uses' => 'App\Http\Controllers\PoolManagementController@updateVehicleStats'
+      ]);
+      $api->get('/rides', [
+        'as' => 'all.rides',
+        'uses' => 'App\Http\Controllers\PoolManagementController@index'
+      ]);
       /**
        * Routes for resource bike
        */
@@ -818,23 +974,14 @@ $api->version('v1',  function ($api) {
       $api->get('reverse','App\Http\Controllers\PlaceController@reverseGeocode');
       $api->get('reverse/dash','App\Http\Controllers\PlaceController@reverseGeocodeNew');
 
-
-      /* Routes for resource trade-license
+    
+       * Routes for resource trade-license
        */
       $api->get('tradelicense', 'App\Http\Controllers\TradeLicenseController@getAllTradeLicenseInfo');
       $api->get('tradelicense/{id}', 'App\Http\Controllers\TradeLicenseController@GetPlaceWithTradeLicense');
       $api->post('tradelicense', 'App\Http\Controllers\TradeLicenseController@store');
       $api->put('tradelicense/{id}', 'App\Http\Controllers\TradeLicenseController@put');
       $api->delete('tradelicense/{id}', 'App\Http\Controllers\TradeLicenseController@remove');
-      /**
-       * Routes for resource g-p-x
-       */
-      $api->get('g-p-x', 'GPXESController@all');
-      $api->get('g-p-x/{id}', 'GPXESController@get');
-      $api->post('gpx', 'App\Http\Controllers\GPXESController@create');
-      $api->put('g-p-x/{id}', 'GPXESController@put');
-      $api->delete('g-p-x/{id}', 'GPXESController@remove');
-
 
     });
 });

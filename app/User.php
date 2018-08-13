@@ -64,6 +64,9 @@ class User extends Model implements
     public function places(){
         return $this->hasMany('App\Place');
     }
+    public function gpx(){
+        return $this->hasMany('App\GPX','user_id');
+    }
     public function moreInfo(){
         return $this->hasOne('App\AdditionalUserInfo','user_id');
     }
