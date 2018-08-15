@@ -15,8 +15,9 @@ class analytics extends Model
         'private_count',
         'public_count',
         'saved_count',
+        'business_search_count',
+        'business_code_count',
 
 
     ];
 }
-

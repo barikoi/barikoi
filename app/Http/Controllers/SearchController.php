@@ -818,11 +818,11 @@ class SearchController extends Controller
           ->orWhere('alternate_address','Like','%'.$y.'%')
           ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
           if(count($place)>=20) {
-            $res = $tnt->searchBoolean($q,50);
-            $place = DB::connection('sqlite')->table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+            $res = $tnt->searchBoolean($q,20);
+            $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
 
       }
-      }
+     }
       if ($size <= 4) {
         $y=''.$x[sizeof($x)-1].'';
         $place = DB::connection('sqlite')->table('places_3')
@@ -830,9 +830,9 @@ class SearchController extends Controller
            ->where('new_address','Like','%'.$y.'%')
            ->orWhere('alternate_address','Like','%'.$y.'%')
            ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-          if(count($place)>=20) {
-           $res = $tnt->searchBoolean($q,50);
-           $place = DB::connection('sqlite')->table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+          if(count($place)>=0 || count($place)>=20) {
+           $res = $tnt->searchBoolean($q,20);
+           $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
 
          }
        }

@@ -82,11 +82,16 @@ $api->version('v1',  function ($api) {
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
 
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 600, 'expires' => 1
+      'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
-  $api->get('api/search/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
+  $api->get('api/search/reverse/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
+  //search using BariKoi Code fofr business
+      $api->get('/business/search/place/{apikey}/{code}',[
+        'as' => 'business.search.place',
+        'uses' => 'App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser',
+      ]);
 
 });
 
@@ -281,11 +286,7 @@ $api->version('v1',  function ($api) {
       'as' => 'business.store.place',
       'uses' => 'App\Http\Controllers\BusinessApiController@addPlaceByBusinessUser',
     ]);
-//search using BariKoi Code fofr business
-    $api->get('/business/SearchPlace/{apikey}/{code}',[
-      'as' => 'business.search.place',
-      'uses' => 'App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser',
-    ]);
+
 
     //places added by a business user
     $api->get('/business/PlacesAdded/{apikey}',[
@@ -587,7 +588,7 @@ $api->version('v1',  function ($api) {
       ]);
 
       //ADN: busines_key generate
-      $api->post('/auth/business/keygen/',[
+      $api->get('/auth/business/keygen/',[
         'as' => 'auth.business.keygen.email',
         'uses' => 'App\Http\Controllers\BusinessApiController@generateApiKey',
       ]);

@@ -50,37 +50,13 @@ class BusinessApiController extends Controller
             'message' => 'Welcome'
         ]);
 	}
-    /*
-	public function generateApiKey($length = 10) {
-
-      $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      $charactersLength = strlen($characters);
-      $apiKey = '';
-      for ($i = 0; $i < $length; $i++) {
-        $apiKey .= $characters[rand(0, $charactersLength - 1)];
-      }
-      return ''.$user_id.':'.$apiKey.'';;
-    }
-	*//*
-	public function generateApiKey(Request $request, $length = 10) {
-
-      $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      $charactersLength = strlen($characters);
-      $apiKey = '';
-      for ($i = 0; $i < $length; $i++) {
-        $apiKey .= $characters[rand(0, $charactersLength - 1)];
-      }
-      return ''.$user_id.':'.$apiKey.'';
-    }
-    */
-
-    public function generateApiKey(Request $request,$length=10) {
 
 
-       // $places->longitude = $request->longitude;
-        $user = JWTAuth::parseToken()->authenticate();
-        $userId = $user->id;
-        $bEmail=$request->email;
+    public function generateApiKey(Request $request) {
+
+
+        $userId = $request->user()->id;
+        $bEmail=$request->user()->email;
         $isUser = User::where('email','=',$bEmail)->where('userType',3)->first();
         if(is_null($isUser)){
           return new JsonResponse([
@@ -98,20 +74,10 @@ class BusinessApiController extends Controller
           $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
           $charactersLength = strlen($characters);
           $apiKey = '';
-          for ($i = 0; $i < $length; $i++) {
+          for ($i = 0; $i < 10; $i++) {
             $apiKey .= $characters[rand(0, $charactersLength - 1)];
           }
           $toEncode= $bUid.':'.$apiKey;
-        //$toEncode=$apiKey;
-          //return $toEncode= $bUid.':'.$apiKey;
-        //  return $toEncode;
-        //  return base64_encode($toEncode);
-        /*  return new JsonResponse([
-              'withOutBase64' => $toEncode,
-              'base64'=>base64_encode($toEncode),
-
-          ]);*/
-
           $newApiKey=new Token;
           $newApiKey->user_id=$bUid;
           $newApiKey->key=base64_encode($toEncode); //in future we won't keep any key in our DB
@@ -119,9 +85,9 @@ class BusinessApiController extends Controller
           $newApiKey->isActive=1;
 
           $newApiKey->save();// Save The New KEY for this User ID
-          Mail::send('Email.bkeygenerated', ['key' => base64_encode($toEncode)], function($message) use($request)
+          Mail::send('Email.bkeygenerated', ['key' => base64_encode($toEncode)], function($message) use($bEmail)
           {
-              $message->to($request->email)->subject('Password Reset!');
+              $message->to($bEmail)->subject('Password Reset!');
           });
           //DB::table('tokens')->where('user_id','=',$userId)->increment('post_count',1);
           return new JsonResponse([
@@ -222,7 +188,7 @@ class BusinessApiController extends Controller
        # code...
       $place = Place::where('uCode','=',$code)->first();
       DB::table('analytics')->increment('business_search_count',1);
-      //DB::table('token')->where('user_id','=',$userId)->increment('get_count',1);
+      DB::table('tokens')->where('user_id','=',$bUser)->increment('get_count',1);
       return $place->toJson();
      }
      else{
@@ -286,10 +252,7 @@ class BusinessApiController extends Controller
   }
   //Number of Keys byuser, and Current Active Key
     public function getCurrentActiveKey(){
-    // $key = base64_decode($apikey);
-    // $bIdAndKey = explode(':', $key);
-   //  $bUser=$bIdAndKey[0];
-    // $bKey=$bIdAndKey[1];
+
      $user = JWTAuth::parseToken()->authenticate();
      $userId = $user->id;
      if (Token::where('user_id','=',$userId)->exists()) {
@@ -312,6 +275,8 @@ class BusinessApiController extends Controller
           ]);
      }
   }
+
+  
     public function AddBusinessDescription(Request $request,$pid){
     $user = JWTAuth::parseToken()->authenticate();
     $userId = $user->id;
