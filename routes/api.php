@@ -88,10 +88,7 @@ $api->version('v1',  function ($api) {
   $api->get('api/search/reverse/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
   //search using BariKoi Code fofr business
-      $api->get('/business/search/place/{apikey}/{code}',[
-        'as' => 'business.search.place',
-        'uses' => 'App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser',
-      ]);
+  $api->get('/business/search/place/{apikey}/{code}','App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser');
 
 });
 
