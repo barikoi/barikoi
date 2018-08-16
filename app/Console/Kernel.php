@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         Commands\indexAddressCommand::class,
         Commands\FixCopyDatabaseCommand::class,
         Commands\UpdateSqliteCommand::class,
+        Commands\ConvertGisCommand::class,
         \Laravelista\LumenVendorPublish\VendorPublishCommand::class
     ];
 
