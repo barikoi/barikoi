@@ -37,7 +37,7 @@ class PlaceController extends Controller
 {
     //
 
-  
+
     // generate strings
     public function generateRandomString($length = 10) {
       $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -1430,7 +1430,7 @@ public function halnagadMyPlace(Request $request,$id){
 
          $result = Place::with('images')
               ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-              ->having('distance','<',0.2)
+              ->having('distance','<',0.1)
               ->orderBy('distance')
               ->get();
          DB::table('analytics')->increment('search_count',1);

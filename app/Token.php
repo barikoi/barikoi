@@ -12,6 +12,14 @@ class Token extends Model
       'user_id',
       'api_key',
       'get_count',
+      //caps for apis , caps = rate limit factor
+      'autocomplete_cap',
+      'geo_code_cap',
+      'reverse_geo_code_cap',
+      //count for apis
+      'autocomplete_count',
+      'geo_code_count',
+      'reverse_geo_code_count',
     ];
 
     public function user()

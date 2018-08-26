@@ -18,7 +18,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Http\Exception\HttpResponseException;
 use Illuminate\Support\Facades\Mail;
 use DB;
-
+use TeamTNT\TNTSearch\TNTSearch;
 use Auth;
 
 use Illuminate\Support\Facades\Hash;
@@ -186,10 +186,15 @@ class BusinessApiController extends Controller
 
      if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
        # code...
-      $place = Place::where('uCode','=',$code)->first();
+      $place = $this->DeveloperSearch($code);
       DB::table('analytics')->increment('business_search_count',1);
+
       DB::table('tokens')->where('user_id','=',$bUser)->increment('get_count',1);
-      return $place->toJson();
+      // increase autocomplete count
+      DB::table('tokens')->where('user_id','=',$bUser)->increment('autocomplete_count',1);
+      // decrease count in autocomplete count
+      DB::table('tokens')->where('user_id','=',$bUser)->decrement('autocomplete_cap',1);
+      return response()->json(['places'=>$place]);
      }
      else{
             return new JsonResponse([
@@ -276,7 +281,7 @@ class BusinessApiController extends Controller
      }
   }
 
-  
+
     public function AddBusinessDescription(Request $request,$pid){
     $user = JWTAuth::parseToken()->authenticate();
     $userId = $user->id;
@@ -301,9 +306,215 @@ class BusinessApiController extends Controller
   }
 
   public function ShowBusinessDescription($pid){
-    //$user = JWTAuth::parseToken()->authenticate();
-    //$userId = $user->id;
+
     $getDescription=BusinessDetails::where('business_pid','=',$pid)->get();
     return $getDescription->toJson();
   }
+  //@@Developer Token analysis
+  public function TokenAnalysis(Request $request)
+  {
+    $details = Token::where('user_id',$request->user()->id)
+    ->where('isActive',1)->get(['reverse_geo_code_count','geo_code_count','autocomplete_count']);
+
+    return $details->toJson();
+  }
+
+  public function DeveloperSearch(Request $request)
+  {
+    $fuzzy_prefix_length  = 2;
+    $fuzzy_max_expansions = 50;
+    $fuzzy_distance       = 2;
+    $tnt = new TNTSearch;
+
+   $tnt->loadConfig([
+       'driver'    => 'mysql',
+       'host'      => 'localhost',
+       'database'  => 'ethikana',
+       'username'  => 'root',
+       'password'  => 'root',
+       'storage'   => '/var/www/html/ethikana/storage/custom/'
+   ]);
+
+   $tnt->selectIndex("places.index");
+   $tnt->fuzziness = true;
+   $tnt->asYouType = true;
+
+
+    $q = $reuqest->q;
+
+   DB::table('Searchlytics')->insert(['query' => $q]);
+   if(Place::where('uCode','=',$q)->exists()){
+      $place=Place::with('images')->where('uCode','=',$q)->get();
+    }
+    else{
+      $q = preg_replace("/[-]/", " ", $q);
+      $q = preg_replace('/\s+/', ' ',$q);
+      $y = '';
+      $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+      $x = explode(" ",$str);
+      $size = sizeof($x);
+      $place = DB::connection('sqlite')->table('places_3')
+      ->where('new_address','Like','%'.$q.'%')
+      ->orWhere('alternate_address','Like','%'.$q.'%')
+      ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+
+    if (count($place)==0) {
+
+    if ($size >=6)
+    {
+      $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+        $place = DB::connection('sqlite')->table('places_3')
+         ->select('*')
+         ->where('new_address','Like','%'.$y.'%')
+         ->orWhere('alternate_address','Like','%'.$y.'%')
+         ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+         if(count($place)>=20) {
+           $res = $tnt->searchBoolean($q,20);
+           $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+
+     }
+    }
+     if ($size <= 4) {
+       $y=''.$x[sizeof($x)-1].'';
+       $place = DB::connection('sqlite')->table('places_3')
+          ->select('*')
+          ->where('new_address','Like','%'.$y.'%')
+          ->orWhere('alternate_address','Like','%'.$y.'%')
+          ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+         if(count($place)>=0 || count($place)>=20) {
+          $res = $tnt->searchBoolean($q,20);
+          $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+
+        }
+      }
+    }
+  }
+    DB::table('analytics')->increment('search_count',1);
+    return $place;
+
+  }
+
+  public function DeveloperAutoComplete($apikey,Request $request)
+  {
+    $key = base64_decode($apikey);
+    $bIdAndKey = explode(':', $key);
+    $bUser=$bIdAndKey[0];
+    $bKey=$bIdAndKey[1];
+
+    if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+
+      $fuzzy_prefix_length  = 2;
+      $fuzzy_max_expansions = 50;
+      $fuzzy_distance       = 2;
+      $tnt = new TNTSearch;
+
+     $tnt->loadConfig([
+         'driver'    => 'mysql',
+         'host'      => 'localhost',
+         'database'  => 'ethikana',
+         'username'  => 'root',
+         'password'  => 'root',
+         'storage'   => '/var/www/html/ethikana/storage/custom/'
+     ]);
+
+     $tnt->selectIndex("places.index");
+     $tnt->fuzziness = true;
+     $tnt->asYouType = true;
+
+     $q = $request->q;
+
+     DB::table('Searchlytics')->insert(['query' => $q]);
+     // increase autocomplete count
+     DB::table('tokens')->where('user_id','=',$bUser)->increment('autocomplete_count',1);
+     if(Place::where('uCode','=',$q)->exists()){
+        $place=Place::with('images')->where('uCode','=',$q)->get();
+      }
+      else{
+        $q = preg_replace("/[-]/", " ", $q);
+        $q = preg_replace('/\s+/', ' ',$q);
+        $y = '';
+        $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+        $x = explode(" ",$str);
+        $size = sizeof($x);
+        $place = DB::connection('sqlite')->table('places_3')
+        ->where('new_address','Like','%'.$str.'%')
+        ->orWhere('alternate_address','Like','%'.$str.'%')
+        ->limit(20)->get(['id','Address','uCode','pType','updated_at']);
+
+      if (count($place)==0) {
+
+        if ($size >=6)
+        {
+          $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+            $place = DB::connection('sqlite')->table('places_3')
+             ->select('*')
+             ->where('new_address','Like','%'.$y.'%')
+             ->orWhere('alternate_address','Like','%'.$y.'%')
+             ->limit(20)->get(['id','Address','uCode','pType','updated_at']);
+             if(ount($place)>=0 || count($place)>=20) {
+               $res = $tnt->searchBoolean($q,20);
+               $place = Place::whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','uCode','pType','updated_at']);
+
+         }
+       }
+       if ($size <= 4) {
+         $y=''.$x[sizeof($x)-1].'';
+         $place = DB::connection('sqlite')->table('places_3')
+            ->select('*')
+            ->where('new_address','Like','%'.$y.'%')
+            ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->limit(20)->get(['id','Address','uCode','pType','updated_at']);
+           if(count($place)>=0 || count($place)>=20) {
+            $res = $tnt->searchBoolean($q,20);
+            $place = Place::whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get([['id','Address','uCode','pType','updated_at']]);
+
+          }
+        }
+      }
+    }
+     DB::table('analytics')->increment('search_count',1);
+     DB::table('analytics')->increment('business_search_count',1);
+     DB::table('tokens')->where('user_id','=',$bUser)->increment('get_count',1);
+     // decrease count in autocomplete count
+     DB::table('tokens')->where('user_id','=',$bUser)->decrement('autocomplete_cap',1);
+     return response()->json(['places'=>$place]);
+  }
+  else{
+           return new JsonResponse([
+             'message' => 'Invalid or No Regsitered Key',
+         ]);
+    }
+
+  }
+
+  public function geocode($apikey,$id)
+  {
+    $key = base64_decode($apikey);
+    $bIdAndKey = explode(':', $key);
+    $bUser=$bIdAndKey[0];
+    $bKey=$bIdAndKey[1];
+
+    if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+      if (is_int($id)) {
+
+          $place = Place::with('images')->where('id',$id)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+          DB::table('tokens')->where('user_id','=',$bUser)->increment('geo_code_count',10);
+          // decrease count in autocomplete count
+          DB::table('tokens')->where('user_id','=',$bUser)->decrement('geo_code_cap',10);
+          return $place->toJson();
+
+   }else {
+     return new JsonResponse([
+        'message' => 'ID must be Integer',
+    ]);
+   }
+
+  }
+  else{
+          return new JsonResponse([
+             'message' => 'Invalid or No Regsitered Key',
+         ]);
+    }
+  }
+
 }

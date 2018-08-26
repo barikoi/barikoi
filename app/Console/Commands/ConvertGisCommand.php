@@ -37,6 +37,7 @@ class ConvertGisCommand extends Command
      */
     public function handle()
     {
+      $startTimer = microtime(true);
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_2')->truncate();
       $this->line("\nCopying the database for you . . . ");
@@ -51,6 +52,9 @@ class ConvertGisCommand extends Command
               latitude,
               city,area,postCode,pType,subtype,uCode,created_at, route_description,GeomFromText(CONCAT('POINT(',longitude, ' ', latitude,')'))
        FROM places");
+       $stopTimer = microtime(true);
+       $totalTime = $stopTimer-$startTimer;
+       $this->line("\nTime: "+$totalTime);
        $this->line("\nDone");
 
 

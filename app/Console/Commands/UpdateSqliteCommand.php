@@ -43,13 +43,14 @@ class UpdateSqliteCommand extends Command
 
       $c1 = DB::table('places_3')->get();
       $this->line("\nInserting the database for you . . . ");
+      $count = 0;
       foreach($c1 as $record){
 
-      DB::connection('sqlite')->table('places_3')->insert(get_object_vars($record));
-      $stopTimer = microtime(true);
+        DB::connection('sqlite')->table('places_3')->insert(get_object_vars($record));
+        $this->line("\n"+$count++);
 
       }
-
+      $stopTimer = microtime(true);
       $this->line("\nDone!!");
 
 

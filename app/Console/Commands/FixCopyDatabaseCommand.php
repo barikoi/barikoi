@@ -37,6 +37,7 @@ class FixCopyDatabaseCommand extends Command
      */
     public function handle()
     {
+      $startTimer = microtime(true);
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_3')->truncate();
       $this->line("\nCopying the database for you . . . ");
@@ -85,6 +86,9 @@ class FixCopyDatabaseCommand extends Command
       $this->line("\nfixing double spaces");
       DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, '  ',' ');");
       DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ,',', ');");
+      $stopTimer = microtime(true);
+      $totalTime = $stopTimer-$startTimer;
+      $this->line("\nTime: "+$totalTime);
       $this->line("\nDone!!");
 
 

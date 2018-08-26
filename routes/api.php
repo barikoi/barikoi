@@ -82,13 +82,15 @@ $api->version('v1',  function ($api) {
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
 
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
+      'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 1
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
   $api->get('api/search/reverse/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
   //search using BariKoi Code fofr business
-  $api->get('/business/search/place/{apikey}/{code}','App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser');
+  $api->get('/developer/search/{apikey}/place/{q}','App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser');
+  $api->get('/api/search/autocomplete/{apikey}/place','App\Http\Controllers\BusinessApiController@DeveloperAutoComplete'); //
+  $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
 
 });
 
@@ -272,30 +274,7 @@ $api->version('v1',  function ($api) {
       'uses' => 'App\Http\Controllers\SearchController@index',
     ]);
   */
-  //---------------------Business User Routes-----------------------//
-    //Register a Business user: from "Admin panel" or "SignUp as a Business feature"
-    $api->post('/business/register', [
-        'as' => 'api.business.register',
-        'uses' => 'App\Http\Controllers\BusinessApiController@RegisterBusinessUser',
-    ]);
-    //pass the encoded API-KEY alog with post request
-    $api->post('/business/StorePlace/{apikey}',[
-      'as' => 'business.store.place',
-      'uses' => 'App\Http\Controllers\BusinessApiController@addPlaceByBusinessUser',
-    ]);
 
-
-    //places added by a business user
-    $api->get('/business/PlacesAdded/{apikey}',[
-      'as' => 'business.added.place',
-      'uses' => 'App\Http\Controllers\BusinessApiController@PlacesAddedByBusinessUser',
-    ]);
-
-    //places added by a business user
-    $api->get('/business/UpdatePlace/{apikey}',[
-      'as' => 'business.update.place',
-      'uses' => 'App\Http\Controllers\BusinessApiController@UpdatePlaceByBusinessUser',
-    ]);
     $api->get('/all/leaderboard/contributor',[
       'as' => 'public.leaderboard.leaderboard',
       'uses' => 'App\Http\Controllers\LeaderBoardController@ContributorLeaderBoard',
@@ -355,7 +334,8 @@ $api->version('v1',  function ($api) {
       */
 
     });
-    $api->post('/tnt/search','App\Http\Controllers\SearchController@testsearch');
+    $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearch');
+    $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@getTntsearch');
 
     $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
 
@@ -827,11 +807,40 @@ $api->version('v1',  function ($api) {
       /**
        * Routes for resource g-p-x
        */
-      $api->get('g-p-x', 'GPXESController@all');
-      $api->get('g-p-x/{id}', 'GPXESController@get');
+      $api->get('gpx', 'App\Http\Controllers\GPXESController@read');
+      $api->get('gpx/{id}', 'App\Http\Controllers\GPXESController@readUserId');
       $api->post('gpx', 'App\Http\Controllers\GPXESController@create');
       $api->put('g-p-x/{id}', 'GPXESController@put');
       $api->delete('g-p-x/{id}', 'GPXESController@remove');
+
+      //---------------------Business User Routes-----------------------//
+        //Register a Business user: from "Admin panel" or "SignUp as a Business feature"
+        $api->post('/business/register', [
+            'as' => 'api.business.register',
+            'uses' => 'App\Http\Controllers\BusinessApiController@RegisterBusinessUser',
+        ]);
+        //pass the encoded API-KEY alog with post request
+        $api->post('/business/StorePlace/{apikey}',[
+          'as' => 'business.store.place',
+          'uses' => 'App\Http\Controllers\BusinessApiController@addPlaceByBusinessUser',
+        ]);
+
+
+        //places added by a business user
+        $api->get('/business/PlacesAdded/{apikey}',[
+          'as' => 'business.added.place',
+          'uses' => 'App\Http\Controllers\BusinessApiController@PlacesAddedByBusinessUser',
+        ]);
+
+        //places added by a business user
+        $api->get('/business/UpdatePlace/{apikey}',[
+          'as' => 'business.update.place',
+          'uses' => 'App\Http\Controllers\BusinessApiController@UpdatePlaceByBusinessUser',
+        ]);
+
+        $api->get('/developer/analytics','App\Http\Controllers\BusinessApiController@TokenAnalysis');
+
+        //----------------------------- Business API ENDs----------------------------------
 
 
     });

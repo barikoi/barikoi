@@ -13,8 +13,6 @@ use App\SavedPlace;
 use App\Referral;
 use App\analytics;
 use App\Image;
-use App\placestwo;
-use App\imagetwo;
 use App\Searchlytics;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -40,94 +38,7 @@ class SearchController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function index(Request $request){
-       $terms=Input::get('query');
-       $q = Input::get('query');
-       //$srch=$request->query;
-       //$q=$request->query;
-       //NATURAL LANGUAGE MODE
-       //BOOLEAN MODE
-       if(Place::where('uCode','=',$terms)->exists()){
-         $posts=Place::with('images')->where('uCode','=',$terms)->get();
-       }
-       else{
-         //$area = DB::table('places')
-           //->where('area', 'LIKE', '%'.$q.'%');
-         $posts = Place::with('images')->where('flag','=',1)
-         ->where('address', 'SOUNDS LIKE', '%'.$q.'%')
-         ->where('address', 'REGEXP', '^'.$q.'$')
-         ->limit(20)
-         ->get(['id','longitude','latitude','Address','area','city','postCode','uCode','pType','subType']);
-         /*$posts = Place::with('images')->where('flag','=',1)
-         ->where("MATCH(Address,area) AGAINST ('.*$q*.' IN BOOLEAN MODE)")
-         ->limit(20)
-         ->get();*/
-          /* $posts=DB::select("SELECT id,longitude,latitude,Address,area,city,postCode,uCode, pType, subType FROM
-                     places
-                     WHERE
-                     MATCH (Address, area)
-                     AGAINST ('.$request->search*' IN BOOLEAN MODE)
-                     LIMIT 10");
-         }else {
-           $posts = 'Did not get anything like that ';
-         }*/
 
-       }
-
-
-
-       DB::table('analytics')->increment('search_count',1);
-       //https://hooks.slack.com/services/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
-       //https://hooks.slack.com/services/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
-       define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
-  /*   if (isset($_SERVER['HTTP_CLIENT_IP']))
-         $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-     else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
-         $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-     else if(isset($_SERVER['HTTP_X_FORWARDED']))
-         $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-     else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
-         $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-     else if(isset($_SERVER['HTTP_FORWARDED']))
-         $ipaddress = $_SERVER['HTTP_FORWARDED'];
-     else if(isset($_SERVER['REMOTE_ADDR']))
-         $ipaddress = $_SERVER['REMOTE_ADDR'];
-     else
-         $ipaddress = 'UNKNOWN';
-     $clientDevice = gethostbyaddr($ipaddress);*/
-    $clientDevice = 'x';
-   // Make your message
-
-   $message = array('payload' => json_encode(array('text' => "Someone searched for: '".$terms. "' , ip:".$clientDevice)));
-
-
-   // Use curl to send your message
-     $c = curl_init(SLACK_WEBHOOK);
-     curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
-     curl_setopt($c, CURLOPT_POST, true);
-     curl_setopt($c, CURLOPT_POSTFIELDS, $message);
-     curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
-     $res = curl_exec($c);
-     curl_close($c);
-
-  /*   $file=Storage::disk('search')->get('search_log.json');
-     $data = json_decode($file,true);
-     unset($file);
-     //you need to add new data as next index of data.
-     $data[] =array(
-         'dateTime'=> date('Y-m-d H:i:s'),
-         'terms' => $terms,
-         'url' => $request->url(),
-         'from_IP' =>$clientDevice
-         );
-     $result1=json_encode($data,JSON_PRETTY_PRINT);
-     //file_put_contents('search_log.json', $result);
-     Storage::disk('search')->put('search_log.json', $result1);
-     unset($result1);
-     $log_save="ok";
-*/
-     return $posts;
-   }
 
 
 
@@ -344,11 +255,7 @@ class SearchController extends Controller
 
 
       $q = 'Food';
-      //$srch=$request->query;
-      //$q=$request->query;
-      //NATURAL LANGUAGE MODE
-      //BOOLEAN MODE
-     // Place::where('uCode','like','%'.$terms.'%')->exists()
+
       if(Place::where('uCode','=',$terms)->exists())
       {
         $posts=Place::with('images')->where('uCode','=',$terms)->get();
@@ -543,20 +450,11 @@ class SearchController extends Controller
           "per_month_search"=>$p,
           "per_day_search" => $q
         ]);
-      //you need to add new data as next index of data.
-      // $data[] =array(
-      //     'dateTime'=> date('Y-m-d H:i:s'),
-      //     'terms' => $terms,
-      //     'url' => $request->url(),
-      //     'from_IP' =>$clientDevice
-      //     );
-      // $result=json_encode($data,JSON_PRETTY_PRINT);
-      // file_put_contents('search_log.json', $result);
-      // unset($result);
-      // $log_save="ok";
 
-      //return $date;
+
+
     }
+
     public function slack($var)
     {
       define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
@@ -644,11 +542,11 @@ class SearchController extends Controller
     //$query = $this->expand($request->get('search'));
     //$res = $tnt->searchBoolean(str_replace(' ', '+',$request->search),20);
     $res = $tnt->search($request->search,20);
-    $place = NewPlace::with('images')->where('new_address','LIKE','%'.$request->search.'%')->orWhere('alternate_address','LIKE','%'.$request->search.'%')->limit(5)->get();
+    $place = Place::with('images')->where('Address','LIKE','%'.$request->search.'%')->limit(5)->get();
 
     if (count($place)===0) {
       if (count($res['ids'])>0) {
-        $place = NewPlace::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+        $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
       }
 
     }
@@ -817,7 +715,7 @@ class SearchController extends Controller
           ->where('new_address','Like','%'.$y.'%')
           ->orWhere('alternate_address','Like','%'.$y.'%')
           ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-          if(count($place)>=20) {
+          if(count($place)>=0 || count($place)>=20) {
             $res = $tnt->searchBoolean($q,20);
             $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
 
@@ -863,56 +761,54 @@ class SearchController extends Controller
      return $result->toJson();
 }
 
-public function TestFuzzySearch($data)
-{
+  public function TestFuzzySearch($data)
+  {
 
-    // input misspelled word
-    $input = $data;
+        // input misspelled word
+        $input = $data;
 
+        // array of words to check against
+        $words  = array('Monipur','Mirpur','Gulshan');
+        // no shortest distance found, yet
+        $shortest = -1;
 
-    // array of words to check against
-    $words  = array('Dastarkhana','Ific', 'Brac', 'Mutual', 'House', 'Bank','Block','Section','Sector');
+        // loop through words to find the closest
+        foreach ($words as $word) {
 
-    // no shortest distance found, yet
-    $shortest = -1;
+            // calculate the distance between the input word,
+            // and the current word
+            $lev = levenshtein($input, $word);
 
-    // loop through words to find the closest
-    foreach ($words as $word) {
+            // check for an exact match
+            if ($lev == 0) {
 
-        // calculate the distance between the input word,
-        // and the current word
-        $lev = levenshtein($input, $word);
+                // closest word is this one (exact match)
+                $closest = $word;
+                $shortest = 0;
 
-        // check for an exact match
-        if ($lev == 0) {
+                // break out of the loop; we've found an exact match
+                break;
+            }
 
-            // closest word is this one (exact match)
-            $closest = $word;
-            $shortest = 0;
+            // if this distance is less than the next found shortest
+            // distance, OR if a next shortest word has not yet been found
+            if ($lev <= $shortest || $shortest < 0) {
+                // set the closest match, and shortest distance
+                $closest  = $word;
+                $shortest = $lev;
+            }
+        }
+        
+        echo "Input word: $input\n";
+        if ($shortest == 0) {
+            return response()->json(["Result"=> $closest]);
+        } else {
 
-            // break out of the loop; we've found an exact match
-            break;
+            return response()->json(["Result"=> "Did you mean: $closest"]);
         }
 
-        // if this distance is less than the next found shortest
-        // distance, OR if a next shortest word has not yet been found
-        if ($lev <= $shortest || $shortest < 0) {
-            // set the closest match, and shortest distance
-            $closest  = $word;
-            $shortest = $lev;
-        }
-    }
-
-    echo "Input word: $input\n";
-    if ($shortest == 0) {
-        return response()->json(["Result"=> $closest]);
-    } else {
-
-        return response()->json(["Result"=> "Did you mean: $closest"]);
-    }
 
 
-
-}// end of function
+      }// end of function
 
 }
