@@ -53,11 +53,7 @@ class SearchController extends Controller
         }
 
         $q = Input::get('query');
-        //$srch=$request->query;
-        //$q=$request->query;
-        //NATURAL LANGUAGE MODE
-        //BOOLEAN MODE
-       // Place::where('uCode','like','%'.$terms.'%')->exists()
+
         if(Place::where('uCode','=',$terms)->exists())
         {
           $posts=Place::with('images')->where('uCode','=',$terms)->get();
@@ -92,8 +88,7 @@ class SearchController extends Controller
 
               if(count($post->images)==0){
                 $img='';
-                // $posts1[]=array('title'=>$ad,'image_url'=>NULL,'subtitle'=>$sub,'buttons'=>array([
-                //     'type'=>'web_url','url'=>$weblink,'title'=>$code]));
+
               }else{
                 foreach ($post->images as $p) {
                   $img=$p->imageLink;}
@@ -149,7 +144,6 @@ class SearchController extends Controller
                   ->get();
           }
 
-
           if(count($posts)==0){
             $ar[]=array("text"=>"my apologies,could not find anything related to' ".$terms." ' nearby");
               return new JsonResponse([
@@ -167,8 +161,6 @@ class SearchController extends Controller
 
               if(count($post->images)==0){
                 $img='';
-                // $posts1[]=array('title'=>$ad,'image_url'=>NULL,'subtitle'=>$sub,'buttons'=>array([
-                //     'type'=>'web_url','url'=>$weblink,'title'=>$code]));
               }else{
                 foreach ($post->images as $p) {
                   $img=$p->imageLink;}
@@ -212,10 +204,6 @@ class SearchController extends Controller
             array($q)
         )->get();
 
-        //return View::make('posts.index', compact('posts'));
-        //$results = $query->get();
-            //Save the log to a .json file
-
         $file = file_get_contents('search_log.json', true);
         $data = json_decode($file,true);
         unset($file);
@@ -252,9 +240,7 @@ class SearchController extends Controller
       }else{
         $distance=10;
       }
-
-
-      $q = 'Food';
+    $q = 'Food';
 
       if(Place::where('uCode','=',$terms)->exists())
       {
@@ -632,7 +618,7 @@ class SearchController extends Controller
 
      if (count($place)==0) {
 
-     if ($size >=6)
+     if ($size>=6)
      {
        $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
        $place = DB::connection('sqlite')->table('places_3')
@@ -641,18 +627,26 @@ class SearchController extends Controller
         ->orWhere('alternate_address','Like','%'.$y.'%')
         ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
       }
-      if ($size <= 4) {
+      if ($size <=5) {
         $y=''.$x[sizeof($x)-1].'';
         $place = DB::connection('sqlite')->table('places_3')
          ->select('*')
          ->where('new_address','Like','%'.$y.'%')
          ->orWhere('alternate_address','Like','%'.$y.'%')
          ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-         if(count($place)>=20) {
-           $res = $tnt->searchBoolean($q,50);
-           $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+        /* if (count($place)==0) {
+           $y=''.$x[sizeof($x)-2].''.$x[sizeof($x)-1].'';
+           $place = DB::connection('sqlite')->table('places_3')
+            ->select('*')
+            ->where('new_address','Like','%'.$y.'%')
+            ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+        */   if(count($place)>=0 || count($place)>=20) {
+             $res = $tnt->searchBoolean($q,20);
+             $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
 
-         }
+           }
+         //}
        }
      }
    }
@@ -688,56 +682,79 @@ class SearchController extends Controller
 
 
      $q = $request->search;
-
+      $y = '';
     DB::table('Searchlytics')->insert(['query' => $q]);
     if(Place::where('uCode','=',$q)->exists()){
        $place=Place::with('images')->where('uCode','=',$q)->get();
      }
      else{
+       $place = DB::connection('sqlite')->table('places_3')
+
+       ->where('new_address','Like','%'.$q.'%')
+       ->orWhere('alternate_address','Like','%'.$q.'%')
+       ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+
+     if (count($place)===0) {
        $q = preg_replace("/[-]/", " ", $q);
        $q = preg_replace('/\s+/', ' ',$q);
-       $y = '';
+
        $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
        $x = explode(" ",$str);
        $size = sizeof($x);
        $place = DB::connection('sqlite')->table('places_3')
-       ->where('new_address','Like','%'.$q.'%')
-       ->orWhere('alternate_address','Like','%'.$q.'%')
-       ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-
-     if (count($place)==0) {
-
-     if ($size >=6)
-     {
-       $y=''.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
-         $place = DB::connection('sqlite')->table('places_3')
-          ->select('*')
-          ->where('new_address','Like','%'.$y.'%')
-          ->orWhere('alternate_address','Like','%'.$y.'%')
-          ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-          if(count($place)>=0 || count($place)>=20) {
-            $res = $tnt->searchBoolean($q,20);
-            $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
-
-      }
-     }
-      if ($size <= 4) {
-        $y=''.$x[sizeof($x)-1].'';
+       ->where('new_address','Like','%'.$str.'%')
+       ->orWhere('alternate_address','Like','%'.$str.'%')
+       ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+    if (count($place)===0) {
+      // if string size is less then equal to 5 words
+      if ($size <=5) {
+        $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
         $place = DB::connection('sqlite')->table('places_3')
-           ->select('*')
-           ->where('new_address','Like','%'.$y.'%')
-           ->orWhere('alternate_address','Like','%'.$y.'%')
-           ->limit(20)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
-          if(count($place)>=0 || count($place)>=20) {
-           $res = $tnt->searchBoolean($q,20);
-           $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+         ->where('new_address','Like','%'.$y.'%')
+         ->orWhere('alternate_address','Like','%'.$y.'%')
+         ->limit(20)->get(['id','Address','area','new_address','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+         if (count($place)===0) {
+           $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+           $place = DB::connection('sqlite')->table('places_3')
+            ->where('flag',1)
+            ->where('new_address','Like','%'.$y.'%')
+            ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+           if(count($place)>=0 || count($place)>=20) {
+             $res = $tnt->searchBoolean($q,20);
+             $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
 
+           }
          }
        }
+
+       if ($size>=6)
+       {
+         $y=''.$x[sizeof($x)-5].' '.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+           $place = DB::connection('sqlite')->table('places_3')
+            ->where('new_address','Like','%'.$y.'%')
+            ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+            if (count($place)===0) {
+              $y=''.$x[sizeof($x)-5].' '.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+                $place = DB::connection('sqlite')->table('places_3')
+                 ->where('new_address','Like','%'.$y.'%')
+                 ->orWhere('alternate_address','Like','%'.$y.'%')
+                 ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+              if(count($place)>=0 || count($place)>=20) {
+                $res = $tnt->searchBoolean($q,20);
+                $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+
+          }
+            }
+
+       }
+
      }
+    }
    }
      DB::table('analytics')->increment('search_count',1);
-     return response()->json(['places'=>$place]);
+     return response()->json(['string' => $y,'places'=>$place ]);
 
    }
 
@@ -798,7 +815,7 @@ class SearchController extends Controller
                 $shortest = $lev;
             }
         }
-        
+
         echo "Input word: $input\n";
         if ($shortest == 0) {
             return response()->json(["Result"=> $closest]);

@@ -82,15 +82,18 @@ $api->version('v1',  function ($api) {
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
 
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 1
+      'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
-  $api->get('api/search/reverse/geocode','App\Http\Controllers\PlaceController@reverseGeocodeNew');
+
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
   //search using BariKoi Code fofr business
   $api->get('/developer/search/{apikey}/place/{q}','App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser');
   $api->get('/api/search/autocomplete/{apikey}/place','App\Http\Controllers\BusinessApiController@DeveloperAutoComplete'); //
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
+  $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
+  $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
+
 
 });
 
@@ -337,7 +340,6 @@ $api->version('v1',  function ($api) {
     $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearch');
     $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@getTntsearch');
 
-    $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
 
     $api->get('get/area/by/polygon','App\Http\Controllers\DataController@getAreaByPolygon');
 

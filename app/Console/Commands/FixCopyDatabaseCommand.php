@@ -48,13 +48,13 @@ class FixCopyDatabaseCommand extends Command
       alternate_address,
       longitude,
       latitude,
-      city,area,postCode,pType,subtype,uCode,created_at,route_description)
+      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description)
       SELECT id,Address,
               CONCAT(Address,', ', area),
               CONCAT(Address,', ', area),
       		    longitude,
               latitude,
-              city,area,postCode,pType,subtype,uCode,created_at, route_description
+              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description
        FROM places");
       $this->line("\n\nFixing the new address for you . . . ");
       DB::select("UPDATE places_3 SET new_address = REPLACE(new_address, ', ',',');");
