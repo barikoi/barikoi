@@ -567,7 +567,7 @@ $api->version('v1',  function ($api) {
       ]);
 
       //ADN: busines_key generate
-      $api->get('/auth/business/keygen/',[
+      $api->POST('/auth/business/keygen/',[
         'as' => 'auth.business.keygen.email',
         'uses' => 'App\Http\Controllers\BusinessApiController@generateApiKey',
       ]);

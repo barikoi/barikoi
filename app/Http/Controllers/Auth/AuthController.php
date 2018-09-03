@@ -556,7 +556,7 @@ class AuthController extends Controller
 
   public function getPlacesByUserIdPaginate(Request $request)
   {
-    ;
+    
     $userId = $request->user()->id;
     //get the places with user id only
     $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->paginate(10);
@@ -564,18 +564,15 @@ class AuthController extends Controller
     //return $deviceId;
   }
 
-  public function getPlacesByUserId()
-  {
-    $user = JWTAuth::parseToken()->authenticate();
-    $userId = $user->id;
-    //get the places with user id only
-    $place = Place::with('images')->where('user_id','=',$userId)->get();
-    return response()->json($place);
-    //return $deviceId;
-  }
-
-
-
+    public function getPlacesByUserId()
+    {
+      $user = JWTAuth::parseToken()->authenticate();
+      $userId = $user->id;
+      //get the places with user id only
+      $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+      return response()->json($place);
+      //return $deviceId;
+    }
 
     // get all saved places for a userId
     public function getSavedPlacesByUserId()
@@ -587,7 +584,7 @@ class AuthController extends Controller
             $join->on('places.id', '=', 'saved_places.pid');
         })
         ->where('saved_places.user_id','=',$userId)
-        ->get();
+        ->get(['Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
          return $savedPlaces->toJson();
     }
     //Add Favorite Place

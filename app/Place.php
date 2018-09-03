@@ -13,6 +13,7 @@ class Place extends Model
         'latitude',
         'Address',
         'area',
+        'city',
         'postCode',
         'pType',
         'subType',
@@ -25,6 +26,7 @@ class Place extends Model
         'cc_code',
         'road_details',
         'number_of_floors',
+        'location'
     ];
     public function business_details()
     {

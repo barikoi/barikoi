@@ -133,6 +133,7 @@ class PlaceController extends Controller
         }
         $input->uCode = $ucode;
         $input->isRewarded = 0;
+        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
         $input->save();
 
         //Slack Webhook : notify
@@ -217,7 +218,7 @@ class PlaceController extends Controller
         //$img1=empty($request->input('images'));
         // if ($request->hasFile('images')) {
         //     dd('write code here');
-        // }
+        //}
         if ($request->has('road_details')){
           $input->road_details = $request->road_details;
         }
@@ -226,7 +227,7 @@ class PlaceController extends Controller
         }
         $input->uCode = $ucode;
         $input->isRewarded = 1;
-        // $input->location = DB::table('places')->selectRaw('GEOMFROMTEXT(POINT('.$lon.''.$lat.'))');
+        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
         $input->save();
         //$placeId=$input->id;
         //if image is there, in post request
@@ -355,7 +356,10 @@ class PlaceController extends Controller
       $input->Address = $request->Address;
       $input->city = $request->city;
       $input->area = $request->area;
-      $input->postCode = $request->postCode;
+      if ($request->has('postCode')) {
+        $input->postCode = $request->postCode;
+      }
+
       $input->pType = $request->pType;
       $input->subType = $request->subType;
       //longitude,latitude,Address,city,area,postCode,pType,subType,flag,device_ID,user_id,email
@@ -384,6 +388,7 @@ class PlaceController extends Controller
 
       $input->uCode = $ucode;
       $input->isRewarded = 1;
+      $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
       $input->save();
       //$placeId=$input->id;
       //if image is there, in post request
@@ -555,6 +560,7 @@ class PlaceController extends Controller
         }
         $input->uCode = $request->uCode;
         $input->isRewarded = 1;
+        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
         $input->save();
 
         //$placeId=$input->id;
@@ -733,6 +739,7 @@ class PlaceController extends Controller
 
         $input->uCode = $request->uCode;
         $input->isRewarded = 0;
+        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
         $input->save();
 
         //Slack Webhook : notify
@@ -876,8 +883,8 @@ class PlaceController extends Controller
 
     public function getListViewItem($code)
     {
-      $place = Place::with('images')->where('uCode','=',$code)->first();
-      return $place->toJson();
+      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+      return response()->json($place);
     }
 
 
@@ -886,15 +893,7 @@ class PlaceController extends Controller
     {
 
       $place = Place::where('device_ID','=',$id)->where('user_id', null)->get();
-      //  $lon = $place->longitude;
-      //  $lat = $place->latitude;
-      //  $Address = $place->Address;
-      //  return $place->toJson();
-      /*response()->json([
-      'lon' => $lon,
-      'lat' => $lat,
-      'address' => $Address
-    ]);*/
+
     }
 
     // Search places by name
@@ -1296,57 +1295,34 @@ class PlaceController extends Controller
       $places = Place::with('images')->where('uCode','=',$ucode)->first();
       $lat = $places->latitude;
       $lon = $places->longitude;
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      //  ->select(DB::raw('uCode, ( 6371 * acos(cos( radians(23) ) * cos( radians( '.$lat.' ) ) * cos( radians( '.$lon.' ) - radians(90) ) + sin( radians(23) ) * sin( radians( '.$lat.' ) ) ) ) AS distance'))
-      ->where('flag','=',1)
-      ->whereNotIn('pType', ['Residential','Vacant'])
-      ->having('distance','<',0.5)
-      ->orderBy('distance')
-      ->limit(10)
-      ->get();
+      $distance = 0.1;
+
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location )
+      ORDER BY distance_in_meters");
       DB::table('analytics')->increment('search_count',1);
-      return $result->toJson();
+      return response()->json($result);
     }
     public function amarashpash(Request $request)
     {
       $lat = $request->latitude;
       $lon = $request->longitude;
+      $distance = 0.1;
       //  $id = $request->user()->id;
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      //->where('pType', '=','Food')
-      ->having('distance','<',0.5)
-      ->where('flag','=',1)
-      ->whereNotIn('pType', ['Residential','Vacant'])
-      ->orderBy('distance')
-      ->limit(30)
-      ->get();
-      DB::table('analytics')->increment('search_count',1);
-      //    DB::table('users')->where('id',$request->user()->id)->update(['user_last_lon'=>$lon,'user_last_lat'=>$lat]);
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location )
+      ORDER BY distance_in_meters");
+      DB::table('users')->where('id',$request->user()->id)->update(['user_last_lon'=>$lon,'user_last_lat'=>$lat]);
 
-
-      /*  $currentLocation = [
-      'longitude' => $lon,
-      'latitude'  => $lat,
-    ];
-
-    $distance = 2; //km
-
-    $candyShopIndex = new TNTGeoSearch();
-    $candyShopIndex->loadConfig([
-    'driver'    => 'mysql',
-    'host'      => 'localhost',
-    'database'  => 'ethikana',
-    'username'  => 'root',
-    'password'  => 'root',
-    'storage'   => '/var/www/html/ethikana/storage/custom/'
-    ]);
-    $candyShopIndex->selectIndex('nearby.index');
-    $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
-    $place = Place::with('images')->whereIn('id', $candyShops['ids'])->get();
-    */
-    return response()->Json($result);
+    return response()->json($result);
 
     }
 
@@ -1354,41 +1330,19 @@ class PlaceController extends Controller
     {
       $lat = $request->latitude;
       $lon = $request->longitude;
+      $distance = 0.1;
       //  $id = $request->user()->id;
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      //->where('pType', '=','Food')
-      ->having('distance','<',0.5)
-      ->where('flag','=',1)
-      ->whereNotIn('pType', ['Residential','Vacant'])
-      ->orderBy('distance')
-      ->limit(30)
-      ->get();
-      DB::table('analytics')->increment('search_count',1);
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ),location ) AND (pType != 'Residential' AND flag = 1)
+      ORDER BY distance_in_meters");
       DB::table('users')->where('id',$request->user()->id)->update(['user_last_lon'=>$lon,'user_last_lat'=>$lat]);
 
+    return response()->json($result);
 
-      /* $currentLocation = [
-      'longitude' => $lon,
-      'latitude'  => $lat,
-    ];
-
-    $distance = 2; //km
-
-    $candyShopIndex = new TNTGeoSearch();
-    $candyShopIndex->loadConfig([
-    'driver'    => 'mysql',
-    'host'      => 'localhost',
-    'database'  => 'ethikana',
-    'username'  => 'root',
-    'password'  => 'root',
-    'storage'   => '/var/www/html/ethikana/storage/custom/'
-    ]);
-    $candyShopIndex->selectIndex('nearby.index');
-    $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
-    $place = Place::with('images')->whereIn('id', $candyShops['ids'])->whereNotIn('pType', ['Residential','Vacant'])->get();
-    */
-    return response()->Json($result);
 
     }
 
@@ -1396,31 +1350,29 @@ class PlaceController extends Controller
     {
       $lat = $request->latitude;
       $lon = $request->longitude;
-      //  $id = $request->user()->id;
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      //->where('pType', '=','Food')
-      ->having('distance','<',1)
-      ->Where('flag','=',1)
-      ->Where('subType','like', $request->ptype)
-      ->orWhere('pType','like', $request->ptype)
-      ->orderBy('distance')
-      ->limit(30)
-      ->get();
-      if (count($result===0)) {
-        $result = Place::with('images')
-        ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-        //->where('pType', '=','Food')
-        ->having('distance','<',5)
-        ->Where('subType','like', $request->ptype)
-        ->orWhere('pType','like', $request->ptype)
-        ->orderBy('distance')
-        ->limit(30)
-        ->get();
+      $distance = 1.5;
+      if ($request->has('ptype')) {
+        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+        FROM places
+        WHERE ST_Contains( ST_MakeEnvelope(
+          Point(($lon+($distance/111)), ($lat+($distance/111))),
+          Point(($lon-($distance/111)), ($lat-($distance/111)))
+        ), location ) AND ( pType LIKE '%$request->ptype%')
+        ORDER BY distance_in_meters");
+      }else {
+        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+        FROM places
+        WHERE ST_Contains( ST_MakeEnvelope(
+          Point(($lon+($distance/111)), ($lat+($distance/111))),
+          Point(($lon-($distance/111)), ($lat-($distance/111)))
+        ), location ) AND (subType LIKE '%$request->subtype%')
+        ORDER BY distance_in_meters");
       }
+
+
       DB::table('analytics')->increment('search_count',1);
 
-      return response()->Json($result);
+      return response()->json($result);
 
     }
 
@@ -1429,34 +1381,15 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
 
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      ->having('distance','<',0.1)
-      ->orderBy('distance')
-      ->get();
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location )
+      ORDER BY distance_in_meters");
       DB::table('analytics')->increment('search_count',1);
-      $totalNumber = count($result);
-      /*  $currentLocation = [
-      'longitude' => $lon,
-      'latitude'  => $lat,
-    ];
-
-    $distance = 2; //km
-
-    $candyShopIndex = new TNTGeoSearch();
-    $candyShopIndex->loadConfig([
-    'driver'    => 'mysql',
-    'host'      => 'localhost',
-    'database'  => 'ethikana',
-    'username'  => 'root',
-    'password'  => 'root',
-    'storage'   => '/var/www/html/ethikana/storage/custom/'
-    ]);
-    $candyShopIndex->selectIndex('nearby.index');
-    $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
-    $place = Place::with('images')->whereIn('id', $candyShops['ids'])->get();
-    */
-    return response()->Json($result);
+      return response()->json($result);
 
     }
 
@@ -1465,15 +1398,18 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
 
-      $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      ->having('distance','<',0.1)
-      ->orderBy('distance')
-      ->get();
+      $distance = 0.1;
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location )
+      ORDER BY distance_in_meters");
       DB::table('analytics')->increment('search_count',1);
       $totalNumber = count($result);
 
-      return response()->Json($result);
+      return response()->json($result);
 
     }
 
@@ -1482,14 +1418,8 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
       $distance = 0.3;
-      /*  $result = Place::with('images')
-      ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-      ->having('distance','<',0.3)
-      ->orderBy('distance')
-      ->get();*/
-      //  $result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*1000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+($distance/111)), ($lon+($distance/111))), point(($lat-($distance/111)),( $lon-($distance/111))))), location) order by distance_in_meters");
       $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
-      FROM places_2
+      FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
         Point(($lon-($distance/111)), ($lat-($distance/111)))
@@ -1539,16 +1469,6 @@ class PlaceController extends Controller
       DB::table('analytics')->increment('saved_count');
 
       return response()->json('saved');
-
-    }
-
-    public function getSavedPlace($deviceID)
-    {
-      $place= DB::table('saved_places')
-      ->where('device_ID','=',$deviceID)
-      ->get();
-
-      return $place->toJson();
 
     }
 
@@ -1789,37 +1709,22 @@ class PlaceController extends Controller
 
                 public function reverseGeocode(Request $request)
                 {
+
                   $lat = $request->latitude;
                   $lon = $request->longitude;
-                  $result = Place::select(DB::raw('Address,area,city, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-                  //  ->select(DB::raw('uCode, ( 6371 * acos(cos( radians(23) ) * cos( radians( '.$lat.' ) ) * cos( radians( '.$lon.' ) - radians(90) ) + sin( radians(23) ) * sin( radians( '.$lat.' ) ) ) ) AS distance'))
-                  ->where('flag','=',1)
-                  ->having('distance','<',0.5)
-                  ->orderBy('distance')
-                  ->limit(1)
-                  ->get();
+                  $distance = 0.1;
+                  //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
+                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
+                  FROM places
+                  WHERE ST_Contains( ST_MakeEnvelope(
+                    Point(($lon+($distance/111)), ($lat+($distance/111))),
+                    Point(($lon-($distance/111)), ($lat-($distance/111)))
+                  ), location )
+                  ORDER BY distance_in_meters LIMIT 1");
 
-                  /*  $currentLocation = [
-                  'longitude' => $lon,
-                  'latitude'  => $lat,
-                ];
+                  return $result;
 
-                $distance = 2; //km
 
-                $candyShopIndex = new TNTGeoSearch();
-                $candyShopIndex->loadConfig([
-                'driver'    => 'mysql',
-                'host'      => 'localhost',
-                'database'  => 'ethikana',
-                'username'  => 'root',
-                'password'  => 'root',
-                'storage'   => '/var/www/html/ethikana/storage/custom/'
-              ]);
-              $candyShopIndex->selectIndex('nearby.index');
-              $candyShops = $candyShopIndex->findNearest($currentLocation, $distance, 100);
-              $place = Place::whereIn('id', $candyShops['ids'])->limit(1)->get();
-              */
-              //    return response()->Json($place);
               return response()->json($result);
             }
 
@@ -1830,7 +1735,7 @@ class PlaceController extends Controller
               $distance = 0.2;
               //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
               $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
-              FROM places_2
+              FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),
                 Point(($lon-($distance/111)), ($lat-($distance/111)))
@@ -1852,7 +1757,7 @@ class PlaceController extends Controller
               $distance = 0.1;
               //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
               $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
-              FROM places_2
+              FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),
                 Point(($lon-($distance/111)), ($lat-($distance/111)))
@@ -1873,7 +1778,7 @@ class PlaceController extends Controller
               //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*1000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+($distance/111)), ($lon+($distance/111))), point(($lat-($distance/111)),( $lon-($distance/111))))), location) AND match(pType) against ('$type' IN BOOLEAN MODE) order by distance_in_meters");
 
               $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType Address,subType, ST_AsText(location)
-              FROM places_2
+              FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),
                 Point(($lon-($distance/111)), ($lat-($distance/111)))
