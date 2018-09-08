@@ -73,7 +73,7 @@ class DataController extends Controller {
 
 
     //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, astext(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -109,17 +109,14 @@ class DataController extends Controller {
       public function FixDataInsidePolygon(Request $request)
       {
         $polygon =$request->polygon;
-        $address = $request->address;
+        //$address = $request->address;
 
-        $places = DB::select("UPDATE places_2 SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,('$polygon') ) and Address LIKE '%$address%'");
+        $places = DB::select("UPDATE places_2_copy SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('$polygon')) )");//and Address LIKE '%$address%'
 
           return response()->json([
-              'Total' => count($places),
-              'places'=> $places
+              'Message' => 'Updated'
             ]);
-
-
-      }
+          }
 
 
       /*

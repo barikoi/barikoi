@@ -80,6 +80,7 @@ $api->version('v1',  function ($api) {
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
+  $api->get('fix/data/inside/polygon','App\Http\Controllers\DataController@FixDataInsidePolygon');
 
   $api->group([
       'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
@@ -88,7 +89,6 @@ $api->version('v1',  function ($api) {
 
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
   //search using BariKoi Code fofr business
-  $api->get('/developer/search/{apikey}/place/{q}','App\Http\Controllers\BusinessApiController@searchPlaceByBusinessUser');
   $api->get('/api/search/autocomplete/{apikey}/place','App\Http\Controllers\BusinessApiController@DeveloperAutoComplete'); //
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
@@ -407,11 +407,11 @@ $api->version('v1',  function ($api) {
 
       //ADN: Show all codes for a specific Authenticated user by user_id (My Places)
       $api->get('/auth/placebyuid/paginate', [
-        'uses' => 'App\Http\Controllers\Auth\AuthController@getPlacesByUserIdPaginate',
+        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserIdPaginate',
         'as' => 'api.auth.uid.paginate'
       ]);
       $api->get('/auth/placebyuid/{deviceid}', [
-        'uses' => 'App\Http\Controllers\Auth\AuthController@getPlacesByUserDeviceId',
+        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserDeviceId',
         'as' => 'api.auth.deviceid'
       ]);
       $api->patch('/drop/update/app/{id}',[
@@ -423,7 +423,7 @@ $api->version('v1',  function ($api) {
 
       //Show all places by User ID: for web mainly
       $api->get('/auth/placeby/userid/', [
-        'uses' => 'App\Http\Controllers\Auth\AuthController@getPlacesByUserId',
+        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserId',
         'as' => 'api.auth.userid'
       ]);
 
@@ -540,24 +540,24 @@ $api->version('v1',  function ($api) {
 
       //ADN: Get All List of Favorite Places for Authenticated User by user_id
       $api->get('/auth/savedplacebyuid',[
-        'uses' => 'App\Http\Controllers\Auth\AuthController@getSavedPlacesByUserId',
+        'uses' => 'App\Http\Controllers\PlaceController@getSavedPlacesByUserId',
         'as' => 'api.auth.savedplaces'
       ]);
       //ADN: Add place to favorite
       $api->post('/auth/save/place',[
         'as' => 'api.auth.places.favorite.add',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authAddFavoritePlace',
+        'uses' => 'App\Http\Controllers\PlaceController@authAddFavoritePlace',
       ]);
       //ADN:remove place from favorite
       $api->get('/auth/saved/place/delete/{barikoicode}',[
         'as' => 'api.auth.places.favorite.delete',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authDeleteFavoritePlace',
+        'uses' => 'App\Http\Controllers\PlaceController@authDeleteFavoritePlace',
       ]);
 
       //Generate Ref_Code for Early Users;(22thpril Onward,Ref_Code auto generated on Registration)
       $api->get('/auth/generate/refcode/',[
         'as' => 'api.auth.generate.refcode',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authRefCodeGen',
+        'uses' => 'App\Http\Controllers\PlaceController@authRefCodeGen',
       ]);
 
       //Redeem A Ref_Code
@@ -800,6 +800,7 @@ $api->version('v1',  function ($api) {
 
 
       /* Routes for resource trade-license
+      Auth applied
        */
       $api->get('tradelicense', 'App\Http\Controllers\TradeLicenseController@getAllTradeLicenseInfo');
       $api->get('tradelicense/{id}', 'App\Http\Controllers\TradeLicenseController@GetPlaceWithTradeLicense');

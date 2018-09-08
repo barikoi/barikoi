@@ -883,7 +883,7 @@ class PlaceController extends Controller
 
     public function getListViewItem($code)
     {
-      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_name','contact_person_phone','road_details','route_description']);
       return response()->json($place);
     }
 
@@ -892,7 +892,7 @@ class PlaceController extends Controller
     public function KhujTheSearchApp($id)
     {
 
-      $place = Place::where('device_ID','=',$id)->where('user_id', null)->get();
+      $place = Place::where('device_ID','=',$id)->where('user_id', null)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
 
     }
 
@@ -1090,9 +1090,6 @@ class PlaceController extends Controller
       $today = Carbon::today()->toDateTimeString();
       $places = Place::with('images')->whereDate('created_at','=',$today)->get(['id','Address','area','longitude','latitude','pType','subType','uCode','created_at']);
 
-      //      $places = Place::orderBy('id','desc')->limit(2000)->get(['id','Address','area','longitude','latitude','pType','subType','uCode']);
-
-      //  $chunks =$places->chunk(200);
       return response()->json($places);
     }
     //Test paginate
@@ -1101,12 +1098,29 @@ class PlaceController extends Controller
       $places = Place::with('images')->with('user')->orderBy('id', 'DESC')->paginate(50);
       return $places->toJson();
     }
-    //delete
-
+    /*
+    @@
+    @Delete Place
+    @@
+    */
     public function mucheFeliMyPlace(Request $request,$barikoiCode)
     {
       Place::where('uCode','=',$barikoiCode)->delete();
-      DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
+      //DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
+      /*define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      // Make your message
+      $getuserData=User::where('id','=',$userId)->select('name')->first();
+      $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
+      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+      // Use curl to send your message
+      $c = curl_init(SLACK_WEBHOOK);
+      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($c, CURLOPT_POST, true);
+      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+      $res = curl_exec($c);
+      curl_close($c);*/
       return response()->json('Place Deleted!');
 
     }
@@ -1115,9 +1129,28 @@ class PlaceController extends Controller
     {
       $places = Place::where('uCode','=',$barikoicode)->first();
       $places->delete();
-      DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
+    /*  define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      // Make your message
+      $getuserData=User::where('id','=',$userId)->select('name')->first();
+      $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
+      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+      // Use curl to send your message
+      $c = curl_init(SLACK_WEBHOOK);
+      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($c, CURLOPT_POST, true);
+      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+      $res = curl_exec($c);
+      curl_close($c);*/
+
+    //  DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
       return response()->json('Done');
     }
+
+    /*
+    DELETE Finish
+    */
     //Update My Place
     public function halnagadMyPlace(Request $request,$id){
 
@@ -1707,8 +1740,8 @@ class PlaceController extends Controller
 
                 }
 
-                public function reverseGeocode(Request $request)
-                {
+              public function reverseGeocode(Request $request)
+              {
 
                   $lat = $request->latitude;
                   $lon = $request->longitude;
@@ -1775,7 +1808,6 @@ class PlaceController extends Controller
             public function measureDistance($type,$distance,$lat,$lon)
             {
 
-              //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*1000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+($distance/111)), ($lon+($distance/111))), point(($lat-($distance/111)),( $lon-($distance/111))))), location) AND match(pType) against ('$type' IN BOOLEAN MODE) order by distance_in_meters");
 
               $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType Address,subType, ST_AsText(location)
               FROM places
@@ -1784,12 +1816,7 @@ class PlaceController extends Controller
                 Point(($lon-($distance/111)), ($lat-($distance/111)))
               ), location ) AND match(pType) against ('$type' IN BOOLEAN MODE)
               ORDER BY distance_in_meters");
-              /*Place::with('images')
-              ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-              ->having('distance','<',$distance)
-              ->orderBy('distance')
-              ->where('pType',$type)
-              ->get();*/
+
               return $result;
             }
             public function Getdistance($SourceLon,$SourceLat,$DestinationLon,$DestinationLat)
@@ -1819,20 +1846,20 @@ class PlaceController extends Controller
             }
             public function getAreaWise(Request $request)
             {
-              $Place = DB::table('places')->where('area', 'LIKE',$request->area)->get();
+              $Place = DB::table('places')->where('area', 'LIKE',$request->area)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Area' => $Place]);
             }
             public function getWardWise(Request $request)
             {
-              $Place = DB::table('places')->where('ward',$request->ward)->get();
+              $Place = DB::table('places')->where('ward',$request->ward)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }
 
             public function getRoadWise(Request $request)
             {
-              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->limit(500)->get();
+              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }
@@ -1842,19 +1869,9 @@ class PlaceController extends Controller
             @@ Analytics
             */
 
-            public function analytics()
-            {
-              /*$user = JWTAuth::parseToken()->authenticate();
-              $userId = $user->id;
-              $getUserType=User::where('id','=',$userId)->select('userType')->first();
-              $thisUserType=$getUserType->userType;
-              if($thisUserType==1){
-              $numbers=analytics::all();
-              return $numbers->toJson();
-            }else{
-            return response()->json('This User is not Allowed To Access This Resource');
-          }
-          */
+    public function analytics()
+      {
+
           $today = Carbon::today()->toDateTimeString();
           $yesterday = Carbon::yesterday()->toDateTimeString();
           $data = DB::connection('sqlite')->table('places_3')->whereDate('created_at','=',$today)->count();
@@ -1866,22 +1883,7 @@ class PlaceController extends Controller
           $beforelastWeek = DB::connection('sqlite')->table('places_3')->whereBetween('created_at',[$weekbeforelastweek,$lastsevenday])->count();
           $twoweeksago = DB::connection('sqlite')->table('places_3')->whereBetween('created_at',[$before2weeks,$weekbeforelastweek])->count();
           $contributor = User::where('isAllowed',0)->count();
-          /*$results = DB::select(
-          "SELECT user_id, sum(count) as total
-          FROM
-          (SELECT
-          Address,user_id,created_at, COUNT(Address) count
-          FROM
-          places
-          GROUP BY
-          Address
-          HAVING
-          COUNT(Address) >1)
-          AS
-          T");
-          */
-          //  $names = array_pluck($results, 'total');
-          //$y = implode('',$names);
+
           $totalSearch = analytics::select('search_count')->get();
           $totalCount = DB::connection('sqlite')->table('places_3')->select('id')->count();
           $publicCount = DB::connection('sqlite')->table('places_3')->where('flag',1)->count();
@@ -1926,6 +1928,118 @@ class PlaceController extends Controller
           $path = storage_path('storage/'.$name);
           return response()->view($path);
         }
+
+
+        /*
+        @@Saved Places
+
+        */
+        public function getPlacesByUserDeviceId(Request $request)
+        {
+          $userId = $request->user()->id;
+         //update all places with this 'deviceId' ,where user_id is null -> update the user id to $userId;
+          //$placesWithDvid=Place::where('device_ID','=',$deviceId)->where('user_id', null)->update(['user_id' => $userId]);
+          //get the places with user id only
+          if ($request->has('limit')) {
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+          }else {
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+          }
+
+          return $place->toJson();
+          //return $deviceId;
+        }
+
+        public function getPlacesByUserIdPaginate(Request $request)
+        {
+
+          $userId = $request->user()->id;
+          //get the places with user id only
+          $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->paginate(10);
+          return $place->toJson();
+          //return $deviceId;
+        }
+
+          public function getPlacesByUserId()
+          {
+            $user = JWTAuth::parseToken()->authenticate();
+            $userId = $user->id;
+            //get the places with user id only
+            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+            return response()->json($place);
+            //return $deviceId;
+          }
+
+          // get all saved places for a userId
+          public function getSavedPlacesByUserId()
+          {
+              $user = JWTAuth::parseToken()->authenticate();
+              $userId = $user->id;
+              $savedPlaces=Place::with('images')
+              ->join('saved_places', function ($join) {
+                  $join->on('places.id', '=', 'saved_places.pid');
+              })
+              ->where('saved_places.user_id','=',$userId)
+              ->get(['Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+               return $savedPlaces->toJson();
+          }
+          //Add Favorite Place
+          public function authAddFavoritePlace(Request $request)
+          {
+              $user = JWTAuth::parseToken()->authenticate();
+              $userId = $user->id;
+              $saved = new SavedPlace;
+              $saved->user_id = $userId; //user who is adding a place to his/her favorite
+              $code = $request->barikoicode; // place is
+              $getPid=Place::where('uCode','=',$code)->first();
+              $pid=$getPid->id;
+              $saved->pid=$pid;
+              //return $pid;
+              $saved->save();
+              DB::table('analytics')->increment('saved_count');
+              return response()->json('saved');
+          }
+          // Delete a place from favorite
+          public function authDeleteFavoritePlace(Request $request,$bariCode)
+          {
+              $user = JWTAuth::parseToken()->authenticate();
+              $userId = $user->id;
+              $toBeDeleted=$bariCode;
+              $findThePid=Place::where('uCode','=',$toBeDeleted)->first();
+              $toDelete = SavedPlace::where('pid','=',$findThePid->id)->where('user_id','=',$userId)->delete();
+              return response()->json('Done');
+              //return $toDelete;
+          }
+          //generate ref code for users dosen't have the code already
+          public function authRefCodeGen(){
+              $user = JWTAuth::parseToken()->authenticate();
+              $userId = $user->id;
+              //Generate Referral Code
+
+              $userInfo=User::where('id','=',$userId)->select('ref_code','isReferred')->first();
+              $isRef_code=$userInfo->ref_code;
+            //  return $isRef_code;
+              if ($isRef_code==NULL){
+              $length = 6;
+              //exclude 0 & O;
+              $characters = '123456789ABCDEFGHIJKLMNPQRSTUVWXYZ';
+              $refCode = '';
+              for ($p = 0; $p < $length; $p++) {
+                  $refCode .= $characters[mt_rand(0, strlen($characters))];
+              }
+                User::where('id','=',$userId)->where('ref_code','=',null)->update(['ref_code'=>$refCode]);
+                return new JsonResponse([
+                  'message'=>'Your Referral Code:'.$refCode
+                  ]);
+                # code...
+              }
+              else{
+                return new JsonResponse([
+                  'message'=>'Your Referral Code:'.$isRef_code
+                  ]);
+              }
+          }
+
 
 
 

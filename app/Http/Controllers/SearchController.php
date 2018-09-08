@@ -528,11 +528,11 @@ class SearchController extends Controller
     //$query = $this->expand($request->get('search'));
     //$res = $tnt->searchBoolean(str_replace(' ', '+',$request->search),20);
     $res = $tnt->search($request->search,20);
-    $place = Place::with('images')->where('Address','LIKE','%'.$request->search.'%')->limit(5)->get();
+    $place = Place::with('images')->where('Address','LIKE','%'.$request->search.'%')->limit(5)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
 
     if (count($place)===0) {
       if (count($res['ids'])>0) {
-        $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+        $place = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
       }
 
     }
@@ -685,11 +685,10 @@ class SearchController extends Controller
       $y = '';
     DB::table('Searchlytics')->insert(['query' => $q]);
     if(Place::where('uCode','=',$q)->exists()){
-       $place=Place::with('images')->where('uCode','=',$q)->get();
+       $place=Place::with('images')->where('uCode','=',$q)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
      }
      else{
        $place = DB::connection('sqlite')->table('places_3')
-
        ->where('new_address','Like','%'.$q.'%')
        ->orWhere('alternate_address','Like','%'.$q.'%')
        ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
@@ -785,7 +784,7 @@ class SearchController extends Controller
         $input = $data;
 
         // array of words to check against
-        $words  = array('Monipur','Mirpur','Gulshan');
+        $words  = array('Monipur','Mirpur','Gulshan','Basundhara');
         // no shortest distance found, yet
         $shortest = -1;
 
