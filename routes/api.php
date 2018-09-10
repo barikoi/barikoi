@@ -77,6 +77,7 @@ $api->version('v1',  function ($api) {
   $api->get('/download/{id}','App\Http\Controllers\PlaceController@export');
   $api->get('/range/download','App\Http\Controllers\PlaceController@exportDataIdWise');
   $api->post('insert/area','App\Http\Controllers\DataController@InsertArea');
+  $api->get('find/point/area/{longitude}/{latitude}','App\Http\Controllers\DataController@FindPointInsidePolygon');
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');

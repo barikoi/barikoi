@@ -111,12 +111,23 @@ class DataController extends Controller {
         $polygon =$request->polygon;
         //$address = $request->address;
 
-        $places = DB::select("UPDATE places_2_copy SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('$polygon')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE places_2_copy SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
 
           return response()->json([
               'Message' => 'Updated'
             ]);
-          }
+      }
+
+      public function FindPointInsidePolygon($lon,$lat)
+      {
+
+
+          $area = DB::select("SELECT name FROM Area WHERE ST_Contains(Area.area, GEOMFROMTEXT('POINT($lon $lat)'))");
+
+          return response()->json($area);
+
+
+      }
 
 
       /*

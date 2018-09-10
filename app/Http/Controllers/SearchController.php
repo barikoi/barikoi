@@ -681,8 +681,11 @@ class SearchController extends Controller
     $tnt->asYouType = true;
 
 
-     $q = $request->search;
-      $y = '';
+    $q = $request->search;
+    if (empty($q)) {
+      return response()->json(['Message' => 'No input']);
+    }
+    $y = '';
     DB::table('Searchlytics')->insert(['query' => $q]);
     if(Place::where('uCode','=',$q)->exists()){
        $place=Place::with('images')->where('uCode','=',$q)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
