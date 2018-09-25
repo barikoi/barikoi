@@ -49,10 +49,10 @@ class DataController extends Controller {
         $area = 'Baridhara DOHS';
       }
       if ($subtype=='all') {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') )");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') )");
       }
       else {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
 
 
       }
@@ -73,7 +73,7 @@ class DataController extends Controller {
 
 
     //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, astext(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -126,6 +126,36 @@ class DataController extends Controller {
 
           return response()->json($area);
 
+
+      }
+
+      // search data by polygon
+      public function DeleteInsidePolygon(Request $request)
+      {
+
+        if ($request->has('area')) {
+          $area = $request->area;
+          $places = DB::select("DELETE FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+
+        }
+        elseif($request->has('pType') &&  $request->has('area')) {
+          $pType = $request->pType;
+          $area = $request->area;
+          $places = DB::select("DELETE FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))')) (AND pType = '$request->type')");
+
+        }
+        else{
+          $user_id = $request->user_id;
+          $places = DB::select("DELETE FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))')) (AND pType = '$request->type' AND user_id='$user_id')");
+
+        }
+
+      //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
+
+          return response()->json([
+              'Total' => count($places),
+              'places'=> $places
+            ]);
 
       }
 

@@ -780,11 +780,11 @@ class SearchController extends Controller
      return $result->toJson();
 }
 
-  public function TestFuzzySearch($data)
+  public function TestFuzzySearch(Request $request)
   {
 
         // input misspelled word
-        $input = $data;
+        $input = $request->data;
 
         // array of words to check against
         $words  = array('Monipur','Mirpur','Gulshan','Basundhara');
@@ -828,6 +828,47 @@ class SearchController extends Controller
 
 
 
-      }// end of function
+            /*  $input= $request->data;
+              $a=explode(" ",$input);
+              $words  = array('Mirpur','Block','House','Dhaka','Jafrabad');
+
+
+              $b=array();
+              //for ($i=0;$i<=count($a);$i++)
+              foreach ($a as $input)
+              {
+              $shortest = -1;
+
+                foreach ($words as $key ) {
+                $lev = levenshtein($input, $key);
+
+                if ($lev == 0) {
+                    $closest = $key;
+                    $shortest = 0;
+
+                 }
+
+
+                if ($lev <= $shortest OR $shortest < 0) {
+
+                    $closest  = $key;
+                    $shortest = $lev;
+                      //echo $closest;
+                      //$b[]=$closest;
+
+                 }
+
+
+
+              }
+              $b[]=$closest;
+              }
+
+              return implode(" ",$b);
+
+              //print_r($b);
+*/
+
+  }// end of function
 
 }

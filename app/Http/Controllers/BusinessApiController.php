@@ -489,7 +489,7 @@ class BusinessApiController extends Controller
                     ), location )
          ORDER BY distance_within_meters LIMIT 1");
 
-          DB::table('tokens')->where('user_id','=',$bUser)->increment('reverse_geo_code_count',10);
+          DB::table('tokens')->where('user_id','=',$bUser)->increment('reverse_geo_code_count',1);
           // decrease count in autocomplete count
 
       return response()->json(['Place' => $result]);

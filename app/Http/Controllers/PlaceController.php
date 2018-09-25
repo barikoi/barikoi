@@ -1107,11 +1107,11 @@ class PlaceController extends Controller
     {
       Place::where('uCode','=',$barikoiCode)->delete();
       //DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
-      /*define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
       // Make your message
-      $getuserData=User::where('id','=',$userId)->select('name')->first();
-      $name=$getuserData->name;
-      $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
+    //  $getuserData=User::where('id','=',$userId)->select('name')->first();
+    //  $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
       //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
       // Use curl to send your message
       $c = curl_init(SLACK_WEBHOOK);
@@ -1120,20 +1120,20 @@ class PlaceController extends Controller
       curl_setopt($c, CURLOPT_POSTFIELDS, $message);
       curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
       $res = curl_exec($c);
-      curl_close($c);*/
+      curl_close($c);
       return response()->json('Place Deleted!');
 
     }
 
-    public function mucheFeli($barikoicode)
+    public function mucheFeli($barikoicode,Request $request)
     {
       $places = Place::where('uCode','=',$barikoicode)->first();
-      $places->delete();
-    /*  define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+
+      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
       // Make your message
-      $getuserData=User::where('id','=',$userId)->select('name')->first();
-      $name=$getuserData->name;
-      $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
+    //  $getuserData=User::where('id','=',$userId)->select('name')->first();
+      //$name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($places->Address)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
       //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
       // Use curl to send your message
       $c = curl_init(SLACK_WEBHOOK);
@@ -1142,9 +1142,10 @@ class PlaceController extends Controller
       curl_setopt($c, CURLOPT_POSTFIELDS, $message);
       curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
       $res = curl_exec($c);
-      curl_close($c);*/
+      curl_close($c);
 
     //  DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
+       $places->delete();
       return response()->json('Done');
     }
 
@@ -1391,7 +1392,8 @@ class PlaceController extends Controller
           Point(($lon+($distance/111)), ($lat+($distance/111))),
           Point(($lon-($distance/111)), ($lat-($distance/111)))
         ), location ) AND ( pType LIKE '%$request->ptype%')
-        ORDER BY distance_in_meters");
+        ORDER BY distance_in_meters
+        LIMIT 50");
       }else {
         $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
         FROM places
@@ -1399,7 +1401,8 @@ class PlaceController extends Controller
           Point(($lon+($distance/111)), ($lat+($distance/111))),
           Point(($lon-($distance/111)), ($lat-($distance/111)))
         ), location ) AND (subType LIKE '%$request->subtype%')
-        ORDER BY distance_in_meters");
+        ORDER BY distance_in_meters
+        LIMIT 20");
       }
 
 
@@ -1561,7 +1564,7 @@ class PlaceController extends Controller
 
     public function tourism()
     {
-      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get();
+      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode']);
 
       return $ghurbokoi->toJson();
     }
@@ -1688,7 +1691,7 @@ class PlaceController extends Controller
                   $place = Place::findOrFail($id);
                   $place->longitude = $request->longitude;
                   $place->latitude = $request->latitude;
-                  $place->save();
+                  //$place->save();
 
 
                   return response()->json(['Message '=>' Updated']);
@@ -1698,7 +1701,7 @@ class PlaceController extends Controller
                   $place = Place::where('uCode','=',$id)->first();
                   $place->longitude = $request->longitude;
                   $place->latitude = $request->latitude;
-                  $place->save();
+                //  $place->save();
 
                   return response()->json(['Message '=>' Updated']);
                 }

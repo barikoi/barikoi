@@ -80,7 +80,7 @@ $api->version('v1',  function ($api) {
   $api->get('find/point/area/{longitude}/{latitude}','App\Http\Controllers\DataController@FindPointInsidePolygon');
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
-  $api->get('fuzzysearch/{data}','App\Http\Controllers\SearchController@TestFuzzySearch');
+  $api->get('fuzzysearch/','App\Http\Controllers\SearchController@TestFuzzySearch');
   $api->get('fix/data/inside/polygon','App\Http\Controllers\DataController@FixDataInsidePolygon');
 
   $api->group([
@@ -325,6 +325,7 @@ $api->version('v1',  function ($api) {
 
 ///================================Auth api starts ===========================================================================
     $api->get('get/custom/polygon','App\Http\Controllers\DataController@SearchInPolygon');
+    $api->delete('delete/inside/polygon','App\Http\Controllers\DataController@DeleteInsidePolygon');
       $api->group(['middleware' => 'throttle:100,1'], function ($api)  {
 
       $api->get('geo','App\Http\Controllers\testController@NewPlace');
