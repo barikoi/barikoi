@@ -90,6 +90,29 @@ class BusinessApiController extends Controller
               $message->to($bEmail)->subject('Password Reset!');
           });
           //DB::table('tokens')->where('user_id','=',$userId)->increment('post_count',1);
+
+          $message = "New API KEY GENERATED,id:".$userId." , Email:".$bEmail." ";
+          $channel = 'newregistration';
+          $data = array(
+               'channel'     => $channel,
+               'username'    => 'tayef',
+               'text'        => $message
+
+           );
+          //Slack Webhook : notify
+          define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+        // Make your message
+          $message_string = array('payload' => json_encode($data));
+          //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+        // Use curl to send your message
+          $c = curl_init(SLACK_WEBHOOK);
+          curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+          curl_setopt($c, CURLOPT_POST, true);
+          curl_setopt($c, CURLOPT_POSTFIELDS, $message_string);
+          curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+          $res = curl_exec($c);
+          curl_close($c);
+
           return new JsonResponse([
               'message' => 'Key Generated!',
               'key'=>base64_encode($toEncode),
@@ -333,6 +356,10 @@ class BusinessApiController extends Controller
 
 
         $q = $request->q;
+
+        if (empty($q)) {
+          return response()->json(['places' => 'Empty Query']);
+        }
          $y = '';
        DB::table('Searchlytics')->insert(['query' => $q]);
        if(Place::where('uCode','=',$q)->exists()){
@@ -502,6 +529,20 @@ class BusinessApiController extends Controller
          ]);
     }
   }
+
+  //Show API ANALYTICS ----------------------********----------------------
+
+  public function totalApiUser()
+  {
+    $api = Token::where('isActive',1)->count();
+    $api_usage = 0;//Token::sum('reverse_geo_code_count');
+
+    return response()->json(['Api User' => $api, 'Api usage' => $api_usage]);
+  }
+
+
+
+  //END API ANALYTICS
 
 
 }

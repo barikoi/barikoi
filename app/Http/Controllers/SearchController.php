@@ -8,6 +8,7 @@ use DB;
 use Auth;
 use App\User;
 use App\Place;
+use App\placestwo;
 use App\NewPlace;
 use App\SavedPlace;
 use App\Referral;
@@ -688,12 +689,13 @@ class SearchController extends Controller
     $y = '';
     DB::table('Searchlytics')->insert(['query' => $q]);
     if(Place::where('uCode','=',$q)->exists()){
-       $place=Place::with('images')->where('uCode','=',$q)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+       $place=placestwo::with('image')->where('uCode','=',$q)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
      }
      else{
        $place = DB::connection('sqlite')->table('places_3')
        ->where('new_address','Like','%'.$q.'%')
        ->orWhere('alternate_address','Like','%'.$q.'%')
+       ->orderBy('created_at','asc')
        ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
 
      if (count($place)===0) {
@@ -706,6 +708,7 @@ class SearchController extends Controller
        $place = DB::connection('sqlite')->table('places_3')
        ->where('new_address','Like','%'.$str.'%')
        ->orWhere('alternate_address','Like','%'.$str.'%')
+       ->orderBy('created_at','asc')
        ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
     if (count($place)===0) {
       // if string size is less then equal to 5 words

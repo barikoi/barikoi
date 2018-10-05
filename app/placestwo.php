@@ -1,10 +1,10 @@
 <?php namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\imagetwo;
+use App\image;
 class placestwo extends Model {
 
-    protected $connection = 'sqlite';
+
     protected $table = 'places_3';
     protected $fillable = [
       'longitude',
@@ -28,9 +28,9 @@ class placestwo extends Model {
     ];
 
     // Relationships
-    public function imagetwo()
+    public function image()
     {
-        return $this->hasMany('App\imagetwo','pid');
+        return $this->hasMany('App\Image','pid');
     }
 
 }

@@ -1111,7 +1111,7 @@ class PlaceController extends Controller
       // Make your message
     //  $getuserData=User::where('id','=',$userId)->select('name')->first();
     //  $name=$getuserData->name;
-      $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($barikoicode)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
+      $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($barikoiCode)."' near '".$barikoiCode.",".$barikoiCode."' area with Code:".$barikoiCode."")));
       //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
       // Use curl to send your message
       $c = curl_init(SLACK_WEBHOOK);
@@ -1145,7 +1145,7 @@ class PlaceController extends Controller
       curl_close($c);
 
     //  DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
-       $places->delete();
+      $places->delete();
       return response()->json('Done');
     }
 
@@ -1688,13 +1688,19 @@ class PlaceController extends Controller
                 }
                 public function dropEdit(Request $request,$id)
                 {
-                  $place = Place::findOrFail($id);
-                  $place->longitude = $request->longitude;
-                  $place->latitude = $request->latitude;
-                  //$place->save();
+                  if (($request->user()->id)===1) {
+                    $place = Place::findOrFail($id);
+                    $place->longitude = $request->longitude;
+                    $place->latitude = $request->latitude;
+                    $place->save();
+                    return response()->json(['Message '=>' Updated']);
+                  }else {
+                    return response()->json(['Message '=>' Not Permitted']);
+                  }
 
 
-                  return response()->json(['Message '=>' Updated']);
+
+
                 }
                 public function dropEditApp(Request $request,$id)
                 {
@@ -1750,7 +1756,7 @@ class PlaceController extends Controller
                   $lon = $request->longitude;
                   $distance = 0.1;
                   //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
+                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, ST_AsText(location)
                   FROM places
                   WHERE ST_Contains( ST_MakeEnvelope(
                     Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1792,7 +1798,7 @@ class PlaceController extends Controller
               $lon = $request->longitude;
               $distance = 0.1;
               //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
+              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode ST_AsText(location)
               FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),

@@ -55,7 +55,7 @@ class FixCopyDatabaseCommand extends Command
       		    longitude,
               latitude,
               city,area,postCode,pType,subtype,flag,uCode,created_at, route_description
-       FROM places");
+       FROM places_last_cleaned");
       $this->line("\n\nFixing the new address for you . . . ");
       DB::select("UPDATE places_3 SET new_address = REPLACE(new_address, ', ',',');");
       $this->line("\nfixing comma to comma space ");

@@ -94,6 +94,7 @@ $api->version('v1',  function ($api) {
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
   $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
+  $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
 
 
 });
@@ -302,10 +303,7 @@ $api->version('v1',  function ($api) {
       'uses' => 'App\Http\Controllers\LeaderBoardController@indexMonthly',
     ]);
 
-    $api->patch('/drop/update/{id}',[
-      'as' => 'drop.update',
-      'uses' => 'App\Http\Controllers\PlaceController@dropEdit',
-    ]);
+
 
 
 
@@ -846,6 +844,11 @@ $api->version('v1',  function ($api) {
         $api->get('/developer/analytics','App\Http\Controllers\BusinessApiController@TokenAnalysis');
 
         //----------------------------- Business API ENDs----------------------------------
+
+        $api->patch('/drop/update/{id}',[
+          'as' => 'drop.update',
+          'uses' => 'App\Http\Controllers\PlaceController@dropEdit',
+        ]);
 
 
     });
