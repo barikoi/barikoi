@@ -95,6 +95,7 @@ $api->version('v1',  function ($api) {
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
   $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
+  $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGeocode');
 
 
 });
@@ -796,6 +797,7 @@ $api->version('v1',  function ($api) {
       REVERSE GEOCODING
       */
       $api->get('reverse','App\Http\Controllers\PlaceController@reverseGeocode');
+      $api->get('reverse/for/addition','App\Http\Controllers\PlaceController@reverseGeocodeForAddressAddition');
       $api->get('reverse/dash','App\Http\Controllers\PlaceController@reverseGeocodeNew');
 
 

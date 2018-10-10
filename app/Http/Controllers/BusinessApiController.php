@@ -534,10 +534,10 @@ class BusinessApiController extends Controller
 
   public function totalApiUser()
   {
-    $api = Token::where('isActive',1)->count();
-    $api_usage = 0;//Token::sum('reverse_geo_code_count');
+    //$api = Token::where('isActive',1)->count();
+    $api_usage = Token::sum('reverse_geo_code_count');
 
-    return response()->json(['Api User' => $api, 'Api usage' => $api_usage]);
+    return response()->json(['Api_usage' => $api_usage]);
   }
 
 

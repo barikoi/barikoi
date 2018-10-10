@@ -695,7 +695,7 @@ class SearchController extends Controller
        $place = DB::connection('sqlite')->table('places_3')
        ->where('new_address','Like','%'.$q.'%')
        ->orWhere('alternate_address','Like','%'.$q.'%')
-       ->orderBy('created_at','asc')
+       ->orderBy('id','desc')
        ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
 
      if (count($place)===0) {
@@ -708,7 +708,7 @@ class SearchController extends Controller
        $place = DB::connection('sqlite')->table('places_3')
        ->where('new_address','Like','%'.$str.'%')
        ->orWhere('alternate_address','Like','%'.$str.'%')
-       ->orderBy('created_at','asc')
+       ->orderBy('id','desc')
        ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
     if (count($place)===0) {
       // if string size is less then equal to 5 words
@@ -717,6 +717,7 @@ class SearchController extends Controller
         $place = DB::connection('sqlite')->table('places_3')
          ->where('new_address','Like','%'.$y.'%')
          ->orWhere('alternate_address','Like','%'.$y.'%')
+         ->orderBy('id','desc')
          ->limit(20)->get(['id','Address','area','new_address','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
          if (count($place)===0) {
            $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
@@ -724,6 +725,7 @@ class SearchController extends Controller
             ->where('flag',1)
             ->where('new_address','Like','%'.$y.'%')
             ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->orderBy('id','desc')
             ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
            if(count($place)>=0 || count($place)>=20) {
              $res = $tnt->searchBoolean($q,20);
@@ -739,12 +741,14 @@ class SearchController extends Controller
            $place = DB::connection('sqlite')->table('places_3')
             ->where('new_address','Like','%'.$y.'%')
             ->orWhere('alternate_address','Like','%'.$y.'%')
+            ->orderBy('id','desc')
             ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
             if (count($place)===0) {
               $y=''.$x[sizeof($x)-5].' '.$x[sizeof($x)-4].' '.$x[sizeof($x)-3].' '.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
                 $place = DB::connection('sqlite')->table('places_3')
                  ->where('new_address','Like','%'.$y.'%')
                  ->orWhere('alternate_address','Like','%'.$y.'%')
+                 ->orderBy('id','desc')
                  ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
               if(count($place)>=0 || count($place)>=20) {
                 $res = $tnt->searchBoolean($q,20);

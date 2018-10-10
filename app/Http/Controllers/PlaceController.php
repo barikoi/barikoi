@@ -1814,6 +1814,23 @@ class PlaceController extends Controller
               return $result;
             }
 
+            public function reverseGeocodeForAddressAddition(Request $request)
+            {
+              $lat = $request->latitude;
+              $lon = $request->longitude;
+              $distance = 0.5;
+              //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
+              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,postCode,subType,uCode, ST_AsText(location)
+              FROM places
+              WHERE ST_Contains( ST_MakeEnvelope(
+                Point(($lon+($distance/111)), ($lat+($distance/111))),
+                Point(($lon-($distance/111)), ($lat-($distance/111)))
+              ), location )
+              ORDER BY distance_in_meters LIMIT 10");
+
+              return $result;
+            }
+
             public function measureDistance($type,$distance,$lat,$lon)
             {
 
