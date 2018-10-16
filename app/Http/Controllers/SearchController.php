@@ -701,7 +701,6 @@ class SearchController extends Controller
      if (count($place)===0) {
        $q = preg_replace("/[-]/", " ", $q);
        $q = preg_replace('/\s+/', ' ',$q);
-
        $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
        $x = explode(" ",$str);
        $size = sizeof($x);
@@ -728,8 +727,10 @@ class SearchController extends Controller
             ->orderBy('id','desc')
             ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
            if(count($place)>=0 || count($place)>=20) {
-             $res = $tnt->searchBoolean($q,20);
-             $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+             $res = $tnt->searchBoolean($str,20);
+             if (count($res['ids'])>0) {
+               $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+             }
 
            }
          }
@@ -751,8 +752,10 @@ class SearchController extends Controller
                  ->orderBy('id','desc')
                  ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
               if(count($place)>=0 || count($place)>=20) {
-                $res = $tnt->searchBoolean($q,20);
-                $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+                $res = $tnt->searchBoolean($str,20);
+                if (count($res['ids'])>0) {
+                  $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+                }
 
           }
             }

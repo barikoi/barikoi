@@ -82,7 +82,7 @@ $api->version('v1',  function ($api) {
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/','App\Http\Controllers\SearchController@TestFuzzySearch');
   $api->get('fix/data/inside/polygon','App\Http\Controllers\DataController@FixDataInsidePolygon');
-
+    $api->get('osm/','App\Http\Controllers\testController@osm');
   $api->group([
       'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
   ], function ($api) {

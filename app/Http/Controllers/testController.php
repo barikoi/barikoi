@@ -30,6 +30,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
 use TeamTNT\TNTSearch\TNTSearch;
 use TeamTNT\TNTSearch\Indexer\TNTIndexer;
+use Redirect;
 
 
 //use Maatwebsite\Excel\Facades\Excel;
@@ -559,6 +560,12 @@ function SearchString($text, $pattern, $k)
 
     	unset($R);
     	return $result;
+}
+
+public function osm()
+{
+
+  return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
 }
 
 
