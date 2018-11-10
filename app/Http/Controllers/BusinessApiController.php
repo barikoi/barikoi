@@ -320,7 +320,7 @@ class BusinessApiController extends Controller
   }
 
 
-  public function DeveloperAutoComplete($apikey,Request $request)
+  public function DeveloperAutoCompleteX($apikey,Request $request)
   {
     $key = base64_decode($apikey);
     $bIdAndKey = explode(':', $key);
@@ -444,6 +444,102 @@ class BusinessApiController extends Controller
       }
 
   }
+
+  public function DeveloperAutoComplete($apikey,Request $request)
+  {
+    $key = base64_decode($apikey);
+    $bIdAndKey = explode(':', $key);
+    $bUser=$bIdAndKey[0];
+    $bKey=$bIdAndKey[1];
+
+    if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+      $cap=DB::table('tokens')->select('autocomplete_count','autocomplete_cap')->where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->first();
+      $autocomplete_cap = $cap->autocomplete_cap;
+      $count = $cap->autocomplete_count;
+      if ((int)$count>=$autocomplete_cap) {
+        return response()->json(['Message'=> 'You have reached your monthly limit, Please contact Sales']);
+
+    }
+    else{
+
+      $fuzzy_prefix_length  = 2;
+      $fuzzy_max_expansions = 50;
+      $fuzzy_distance       = 3;
+      $tnt = new TNTSearch;
+
+     $tnt->loadConfig([
+         'driver'    => 'mysql',
+         'host'      => 'localhost',
+         'database'  => 'ethikana',
+         'username'  => 'root',
+         'password'  => 'root',
+         'storage'   => '/var/www/html/ethikana/storage/custom/'
+     ]);
+
+     $tnt->selectIndex("places.index");
+     $tnt->fuzziness = true;
+     $tnt->asYouType = true;
+
+
+     $q = $request->q;
+     $place = DB::connection('sqlite')->table('places_3')
+        ->where('new_address','Like','%'.$q.'%')
+        ->orWhere('alternate_address','Like','%'.$q.'%')
+        //->orWhere('uCode','=',$q)
+        ->limit(10)->get(['id','Address','uCode']);
+        if (count($place)>0) {
+          DB::table('analytics')->increment('search_count',1);
+          DB::table('analytics')->increment('business_search_count',1);
+          DB::table('tokens')->where('user_id','=',$bUser)->increment('autocomplete_count',1);
+          return response()->json(['places'=>$place ]);
+        }else {
+          $q = preg_replace("/[-]/", " ", $q);
+          $q = preg_replace('/\s+/', ' ',$q);
+          $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+          $x = explode(" ",$str);
+          $size = sizeof($x);
+          $place = DB::connection('sqlite')->table('places_3')
+          ->where('new_address','Like','%'.$str.'%')
+          ->orWhere('alternate_address','Like','%'.$str.'%')
+         // ->orderBy('id','desc')
+          ->limit(10)->get(['id','Address','uCode']);
+          if (count($place)>0) {
+            DB::table('analytics')->increment('search_count',1);
+            DB::table('analytics')->increment('business_search_count',1);
+            DB::table('tokens')->where('user_id','=',$bUser)->increment('autocomplete_count',1);
+            return response()->json(['places'=>$place ]);
+          }else {
+            $res = $tnt->searchBoolean($request->q,10);
+            if (count($res['ids'])>0) {
+              $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','uCode']);
+              DB::table('analytics')->increment('search_count',1);
+              DB::table('analytics')->increment('business_search_count',1);
+              DB::table('tokens')->where('user_id','=',$bUser)->increment('autocomplete_count',1);
+              return response()->json(['places' => $place]);
+            }else{
+              return new JsonResponse([
+                'places' =>[
+                  "Message"=> "Not Found"
+
+                ]
+
+                ]);
+            }
+          }
+        }
+
+    }
+
+  }
+  else{
+           return new JsonResponse([
+             'Message' => 'Invalid or No Regsitered Key',
+         ]);
+    }
+
+}
+
+
   /*
   @@Geocode
   */
@@ -528,6 +624,32 @@ class BusinessApiController extends Controller
              'message' => 'Invalid or No Regsitered Key',
          ]);
     }
+  }
+
+  public function reverseNearBy(Request $request, $apikey,$distance=0.5, $limit=15)
+  {
+    $key = base64_decode($apikey);
+    $bIdAndKey = explode(':', $key);
+    $bUser=$bIdAndKey[0];
+    $bKey=$bIdAndKey[1];
+    if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+      $lat = $request->latitude;
+      $lon = $request->longitude;
+      //$distance = 0.5;
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,postCode,subType,uCode, ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location )
+      ORDER BY distance_in_meters LIMIT $limit");
+    }
+    else{
+            return new JsonResponse([
+               'message' => 'Invalid or No Regsitered Key',
+           ]);
+      }
+    return $result;
   }
 
   //Show API ANALYTICS ----------------------********----------------------

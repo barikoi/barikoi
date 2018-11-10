@@ -38,6 +38,8 @@ class FixCopyDatabaseCommand extends Command
     public function handle()
     {
       $startTimer = microtime(true);
+      $this->line("updating place last cleaned for you . . . ");
+      DB::select("INSERT IGNORE INTO places_last_cleaned SELECT * FROM places");
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_3')->truncate();
       $this->line("\nCopying the database for you . . . ");
@@ -48,13 +50,13 @@ class FixCopyDatabaseCommand extends Command
       alternate_address,
       longitude,
       latitude,
-      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description)
+      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description,contact_person_phone)
       SELECT id,Address,
               CONCAT(Address,', ', area),
               CONCAT(Address,', ', area),
       		    longitude,
               latitude,
-              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description
+              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description, contact_person_phone
        FROM places_last_cleaned");
       $this->line("\n\nFixing the new address for you . . . ");
       DB::select("UPDATE places_3 SET new_address = REPLACE(new_address, ', ',',');");
@@ -73,19 +75,20 @@ class FixCopyDatabaseCommand extends Command
       $this->line("\n\nFixing the new alternate address for you . . . ");
 
       $this->line("\nfixing comma space to comma ");
-      DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ',',');");
+    /*  DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ',',');");
       $this->line("\nfixing comma to comma space ");
       DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ',',', ');");
       $this->line("\nfixing : ");
       DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ':',' ');");
-
+    */
       $this->line("\nreplacing comma with space spaces");
-      DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ',',' ');");
+      DB::select("UPDATE places_3 SET alternate_address = REPLACE(new_address, ',','');");
       $this->line("\n. . . . . .");
-      DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ,',',');");
+      $this->line("\nfixing double comma's");
+    /*  DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ,',',');");
       $this->line("\nfixing double spaces");
       DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, '  ',' ');");
-      DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ,',', ');");
+      DB::select("UPDATE places_3 SET alternate_address = REPLACE(alternate_address, ', ,',', ');");*/
       $stopTimer = microtime(true);
       $totalTime = $stopTimer-$startTimer;
       $this->line("\nTime: "+$totalTime);

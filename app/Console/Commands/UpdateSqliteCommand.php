@@ -41,7 +41,7 @@ class UpdateSqliteCommand extends Command
       $this->line("\nEmptying the database for you . . . ");
       DB::connection('sqlite')->table('places_3')->where('Address','LIKE','%%')->delete();
 
-      $c1 = DB::table('places_3')->get();
+      $c1 = DB::table('places_3')->where('flag',1)->get();
       $this->line("\nInserting the database for you . . . ");
       $count = 0;
       foreach($c1 as $record){

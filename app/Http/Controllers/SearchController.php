@@ -127,22 +127,38 @@ class SearchController extends Controller
         $terms=Input::get('query');
 
         $q = Input::get('query');
-        //$srch=$request->query;
-        //$q=$request->query;
-        //NATURAL LANGUAGE MODE
-        //BOOLEAN MODE
-       // Place::where('uCode','like','%'.$terms.'%')->exists()
+
         if(Place::where('uCode','=',$terms)->exists())
         {
-          $posts=Place::with('images')->where('uCode','=',$terms)->get();
+          $posts=Place::with('images')->where('uCode','=',$terms)->get(['Address','uCode','area','city','postCode']);
         }
         else{
-          $posts = Place::with(array('images' => function($query)
-          {
-            $query->select('pid','imageLink');}))->where('flag',1)
-                  ->whereRaw("MATCH(Address,area) AGAINST(? IN BOOLEAN MODE)",array($q))
-                  ->limit(4)
-                  ->get();
+          $fuzzy_prefix_length  = 2;
+          $fuzzy_max_expansions = 50;
+          $fuzzy_distance       = 2;
+          $tnt = new TNTSearch;
+
+         $tnt->loadConfig([
+             'driver'    => 'mysql',
+             'host'      => 'localhost',
+             'database'  => 'ethikana',
+             'username'  => 'root',
+             'password'  => 'root',
+             'storage'   => '/var/www/html/ethikana/storage/custom/'
+         ]);
+
+         $tnt->selectIndex("places.index");
+         $tnt->fuzziness = true;
+         $tnt->asYouType = true;
+
+
+
+
+         $res = $tnt->searchBoolean($q,20);
+         if (count($res['ids'])>0) {
+           $posts = Place::with('images')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['Address','uCode','area','city','postCode']);
+           //return response()->json(['places' => $place]);
+         }
           }
 
           if(count($posts)==0){
@@ -661,6 +677,113 @@ class SearchController extends Controller
 
    }
 
+   public function testSearchtwo(Request $request)
+   {
+     $fuzzy_prefix_length  = 2;
+     $fuzzy_max_expansions = 50;
+     $fuzzy_distance       = 2;
+     $tnt = new TNTSearch;
+
+    $tnt->loadConfig([
+        'driver'    => 'mysql',
+        'host'      => 'localhost',
+        'database'  => 'ethikana',
+        'username'  => 'root',
+        'password'  => 'root',
+        'storage'   => '/var/www/html/ethikana/storage/custom/'
+    ]);
+
+    $tnt->selectIndex("places.index");
+    $tnt->fuzziness = true;
+    $tnt->asYouType = true;
+
+
+    $q = $request->search;
+
+    $res = $tnt->searchBoolean($q,20);
+    if (count($res['ids'])>0) {
+      $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+      return response()->json(['places' => $place]);
+    }
+    else {
+      return response()->json(['places'=>'Not found']);
+    }
+   }
+
+   public function testSearchthree(Request $request)
+   {
+     $fuzzy_prefix_length  = 2;
+     $fuzzy_max_expansions = 50;
+     $fuzzy_distance       = 3;
+     $tnt = new TNTSearch;
+
+    $tnt->loadConfig([
+        'driver'    => 'mysql',
+        'host'      => 'localhost',
+        'database'  => 'ethikana',
+        'username'  => 'root',
+        'password'  => 'root',
+        'storage'   => '/var/www/html/ethikana/storage/custom/'
+    ]);
+
+    $tnt->selectIndex("places.index");
+    $tnt->fuzziness = true;
+    $tnt->asYouType = true;
+
+
+    $q = $request->search;
+    $place = DB::connection('sqlite')->table('places_3')
+       ->where('flag',1)
+       ->where('new_address','Like','%'.$q.'%')
+       ->orWhere('alternate_address','Like','%'.$q.'%')
+       //->orWhere('uCode','=',$q)
+       ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+       if (count($place)>0) {
+         return response()->json(['places'=>$place ]);
+       }else {
+         $q = preg_replace("/[-]/", " ", $q);
+         $q = preg_replace('/\s+/', ' ',$q);
+         $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+         $x = explode(" ",$str);
+         $size = sizeof($x);
+         $place = DB::connection('sqlite')->table('places_3')
+         ->where('flag',1)
+         ->where('new_address','Like','%'.$str.'%')
+         ->orWhere('alternate_address','Like','%'.$str.'%')
+        // ->orderBy('id','desc')
+         ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+         if (count($place)>0) {
+           return response()->json(['places'=>$place ]);
+         }else {
+           $place = Place::where('uCode','=',$request->search)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+           if (count($place)>0) {
+             return response()->json(['places'=>$place ]);
+           }
+           else {
+             $res = $tnt->searchBoolean($request->search,10);
+             if (count($res['ids'])>0) {
+               $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+               return response()->json(['places' => $place]);
+             }else{
+               return new JsonResponse([
+                 'places' =>[
+                   "Message"=> "Not Found",
+
+                 ]
+
+                 ]);
+             }
+           }
+
+         }
+       }
+
+
+
+   }
+
+
+
    public function testSearch(Request $request)
    {
      $fuzzy_prefix_length  = 2;
@@ -688,15 +811,15 @@ class SearchController extends Controller
     }
     $y = '';
     DB::table('Searchlytics')->insert(['query' => $q]);
-    if(Place::where('uCode','=',$q)->exists()){
-       $place=placestwo::with('image')->where('uCode','=',$q)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+    if(DB::table('places_3')->where('uCode','=',$q)->exists()){
+       $place=Place::with('images')->select('id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at')->where('uCode','=',$q)->get();
      }
      else{
        $place = DB::connection('sqlite')->table('places_3')
        ->where('new_address','Like','%'.$q.'%')
        ->orWhere('alternate_address','Like','%'.$q.'%')
        ->orderBy('id','desc')
-       ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+       ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
 
      if (count($place)===0) {
        $q = preg_replace("/[-]/", " ", $q);
@@ -708,7 +831,7 @@ class SearchController extends Controller
        ->where('new_address','Like','%'.$str.'%')
        ->orWhere('alternate_address','Like','%'.$str.'%')
        ->orderBy('id','desc')
-       ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
+       ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
     if (count($place)===0) {
       // if string size is less then equal to 5 words
       if ($size <=5) {
@@ -730,6 +853,9 @@ class SearchController extends Controller
              $res = $tnt->searchBoolean($str,20);
              if (count($res['ids'])>0) {
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+               return response()->json(['places' => $place]);
+             }else{
+               return response()->json(['places'=>'Not found']);
              }
 
            }
@@ -755,6 +881,9 @@ class SearchController extends Controller
                 $res = $tnt->searchBoolean($str,20);
                 if (count($res['ids'])>0) {
                   $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+                  return response()->json(['places' => $place]);
+                }else {
+                  return response()->json(['places'=>'Not found']);
                 }
 
           }

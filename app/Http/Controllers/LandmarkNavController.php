@@ -106,7 +106,7 @@ class LandmarkNavController extends Controller
         $latB=$request->latitudeB;
         $lonB=$request->longitudeB;
         $dist=$this->haversine($request);
-        $resultA = DB::table('places')
+        $resultA = DB::table('places_3')
                   ->select(DB::raw('*, ((ACOS(SIN('.$latA.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$latA.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lonA.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
                   //->where('pType','=','Landmark')
                   ->where('subType','=','Bus Stand')
@@ -120,7 +120,7 @@ class LandmarkNavController extends Controller
           $lonBusfromA=$resA[0]['longitude'];
           $latBusfromA=$resA[0]['latitude'];
 
-          $nrstLandMarkA = DB::table('places')
+          $nrstLandMarkA = DB::table('places_3')
                   ->select(DB::raw('*, ((ACOS(SIN('.$latA.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$latA.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lonA.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
                   ->where('pType','=','Landmark')
                   //->orWhere('subType','=','Bus Stand')
@@ -129,7 +129,7 @@ class LandmarkNavController extends Controller
                   ->limit(1)
                   ->get();
 
-        $resultB = DB::table('places')
+        $resultB = DB::table('places_3')
                   ->select(DB::raw('*, ((ACOS(SIN('.$latB.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$latB.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lonB.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
                   //->where('pType','=','Landmark')
                   ->where('subType','=','Bus Stand')
@@ -140,7 +140,7 @@ class LandmarkNavController extends Controller
           $resB=json_decode(json_encode($resultB),true);
           $lonBusfromB=$resB[0]['longitude'];
           $latBusfromB=$resB[0]['latitude'];
-          $nrstLandMarkB = DB::table('places')
+          $nrstLandMarkB = DB::table('places_3')
                   ->select(DB::raw('*, ((ACOS(SIN('.$latB.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$latB.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lonB.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
                   ->where('pType','=','Landmark')
                   //->orWhere('subType','=','Bus Stand')

@@ -443,7 +443,7 @@ class AuthController extends Controller
   public function resetPassword(Request $request){
     if ($request->has('email')) {
     # code...
-    $findThisEmail=$request->email;
+    $findThisEmail=trim($request->email," ");
     if (User::where('email','=',$findThisEmail)->exists()) {
     $characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
     $charactersLength = strlen($characters);
@@ -463,7 +463,7 @@ class AuthController extends Controller
     //Pass A View
     Mail::send('Email.resetpass', ['tempPass' => $randomStringChar], function($message) use($request)
     {
-        $message->to($request->email)->subject('Password Reset!');
+        $message->to(trim($request->email," "))->subject('Password Reset!');
     });
     //return 'logged email via mailtrap.io...';
     return new JsonResponse([
@@ -472,7 +472,7 @@ class AuthController extends Controller
       ]);
     }else{
       return new JsonResponse([
-        'message' => 'Could not find any User with this Email!',
+        'message' => 'Sorry! Could not find any user with this Email!',
         ]);
     }
   }

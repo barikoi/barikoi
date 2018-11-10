@@ -91,10 +91,13 @@ $api->version('v1',  function ($api) {
   $api->post('/api/search','App\Http\Controllers\SearchController@APIsearch');
   //search using BariKoi Code fofr business
   $api->get('/api/search/autocomplete/{apikey}/place','App\Http\Controllers\BusinessApiController@DeveloperAutoComplete'); //
+  //$api->get('/api/search/autocomplete/test/{apikey}/place','App\Http\Controllers\BusinessApiController@testSearchthree'); //
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
+  $api->get('api/search/reverse/{apikey}/nearby/{distance}/{limit}','App\Http\Controllers\BusinessApiController@reverseNearBy');
   $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
+
   $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGeocode');
 
 
@@ -330,7 +333,7 @@ $api->version('v1',  function ($api) {
       $api->get('geo','App\Http\Controllers\testController@NewPlace');
       $api->get('poly','App\Http\Controllers\testController@TestPolygon');
 
-      $api->get('area/polygon','App\Http\Controllers\DataController@getAreaDataPolygonWise');
+
       $api->get('get/area','App\Http\Controllers\DataController@getArea');
 
 
@@ -338,7 +341,9 @@ $api->version('v1',  function ($api) {
       */
 
     });
+    $api->get('area/polygon','App\Http\Controllers\DataController@getAreaDataPolygonWise');
     $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearch');
+    $api->post('/tnt/search/test','App\Http\Controllers\SearchController@testSearchthree');
     $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@getTntsearch');
 
 

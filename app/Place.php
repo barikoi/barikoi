@@ -26,7 +26,9 @@ class Place extends Model
         'cc_code',
         'road_details',
         'number_of_floors',
-        'location'
+        'location',
+        'contact_person_phone',
+        'contact_person_name',
     ];
     public function business_details()
     {

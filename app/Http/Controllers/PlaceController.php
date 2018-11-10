@@ -63,6 +63,8 @@ class PlaceController extends Controller
       {
         $string = $this->generateRandomString(4);
         $number = $this->generateRandomNumber(4);
+        $Address = rtrim($request->Address,' ');
+        $Address = ltrim($request->Address,' ');
         $ucode =  ''.$string.''.$number.'';
         $lat = $request->latitude;
         $lon = $request->longitude;
@@ -96,9 +98,9 @@ class PlaceController extends Controller
         $input = new Place;
         $input->longitude = $lon;
         $input->latitude = $lat;
-        $input->Address = $request->Address;
-        $input->city = $request->city;
-        $input->area = $request->area;
+        $input->Address = title_case($Address);
+        $input->city = trim($request->city);
+        $input->area = trim($request->area," ");
         $input->postCode = $request->postCode;
         $input->pType = $request->pType;
         $input->subType = $request->subType;
@@ -167,10 +169,12 @@ class PlaceController extends Controller
     }
     //Mapper
     public function XauthAddNewPlace(Request $request){
-
+      $yesterday = Carbon::yesterday()->toDateTimeString();
       $user = JWTAuth::parseToken()->authenticate();
       $userId = $user->id;
       $isAllowed = $user->isAllowed;
+
+      $subType = rtrim($request->subType,",");
       if ($isAllowed===0) {
 
         $randomStringChar=$this->generateRandomString(4);
@@ -190,12 +194,12 @@ class PlaceController extends Controller
         $input = new Place;
         $input->longitude = $lon;
         $input->latitude = $lat;
-        $input->Address = title_case($request->Address);
+        $input->Address = title_case(ltrim($request->Address," "));
         $input->city = title_case($request->city);
-        $input->area = title_case(ltrim($request->area));
+        $input->area = title_case(trim($request->area," "));
         $input->postCode = $request->postCode;
         $input->pType = $request->pType;
-        $input->subType = $request->subType;
+        $input->subType = $subType;
         //longitude,latitude,Address,city,area,postCode,pType,subType,flag,device_ID,user_id,email
         if($request->has('flag'))
         {
@@ -316,6 +320,9 @@ class PlaceController extends Controller
         //return response()->json($ucode);
 
         //everything went weel, user gets add place points, return code and the point he recived
+        //$new_address = ''.title_case(ltrim($request->Address," ")).', '.$request->area.''
+        //$alternate_address = str_replace(array('.', ','), '' , $new_address);
+
         return response()->json([
           'uCode' => $ucode,
           //'img_flag' => $imgflag,
@@ -336,7 +343,7 @@ class PlaceController extends Controller
       $user = JWTAuth::parseToken()->authenticate();
       $userId = $user->id;
 
-      $randomStringChar=$this->word();
+      $randomStringChar=$this->generateRandomString(4);
       //number part
       $charactersNum = '0123456789';
       $charactersNumLength = strlen($charactersNum);
@@ -353,9 +360,9 @@ class PlaceController extends Controller
       $input = new Place;
       $input->longitude = $lon;
       $input->latitude = $lat;
-      $input->Address = $request->Address;
-      $input->city = $request->city;
-      $input->area = $request->area;
+      $input->Address = title_case($request->Address);
+      $input->city = title_case($request->city);
+      $input->area = trim($request->area," ");
       if ($request->has('postCode')) {
         $input->postCode = $request->postCode;
       }
@@ -477,6 +484,42 @@ class PlaceController extends Controller
 
       //Give that guy 5 points.
       //
+    /*  DB::select("INSERT IGNORE INTO places_last_cleaned SELECT * FROM places");
+    /  DB::select("INSERT IGNORE INTO places_3 (
+      id,
+      Address,
+      new_address,
+      alternate_address,
+      longitude,
+      latitude,
+      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description)
+      SELECT id,Address,
+              CONCAT(Address,', ', area),
+              CONCAT(Address,' ', area),
+      		    longitude,
+              latitude,
+              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description
+       FROM places_last_cleaned");
+
+      $c1 = DB::table('places_3')->where('flag',1)->orderBy('id','desc')->limit(1)->get();
+
+    /*  DB::connection('sqlite')->table('places_3')->insert([
+        'id'=>$c1->id,
+        'Address' => $c1->Address,
+        'new_address' => $c1->new_address,
+        'alternate_address' => $c1->alternate_address,
+        'longitude' => $c1->longitude,
+        'latitude' => $c1->latitude,
+        'city'=> $c1->city,
+        'area'=> $c1->area,
+        'postCode'=> $c1->postCode,
+        'pType' => $c1->pType,
+        'subType' => $c1->subType,
+        'flag' => $c1->uCode,
+        'create_at' => $c1->created_at,
+        'route_description' => $c1->route_description,
+      ]);*/
+
       User::where('id','=',$userId)->increment('total_points',5+$img_point);
       $getTheNewTotal=User::where('id','=',$userId)->select('total_points')->first();
 
@@ -1331,7 +1374,7 @@ class PlaceController extends Controller
       $lon = $places->longitude;
       $distance = 0.1;
 
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1366,7 +1409,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
       $distance = 0.1;
       //  $id = $request->user()->id;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1386,7 +1429,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
       $distance = 1.5;
       if ($request->has('ptype')) {
-        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
         FROM places
         WHERE ST_Contains( ST_MakeEnvelope(
           Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1395,7 +1438,7 @@ class PlaceController extends Controller
         ORDER BY distance_in_meters
         LIMIT 50");
       }else {
-        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
         FROM places
         WHERE ST_Contains( ST_MakeEnvelope(
           Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1417,7 +1460,7 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
 
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1435,7 +1478,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
 
       $distance = 0.1;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1454,7 +1497,7 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
       $distance = 0.3;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1756,7 +1799,7 @@ class PlaceController extends Controller
                   $lon = $request->longitude;
                   $distance = 0.1;
                   //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, ST_AsText(location)
+                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, contact_person_phone,ST_AsText(location)
                   FROM places
                   WHERE ST_Contains( ST_MakeEnvelope(
                     Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1798,7 +1841,7 @@ class PlaceController extends Controller
               $lon = $request->longitude;
               $distance = 0.1;
               //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode ST_AsText(location)
+              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode,contact_person_phone, ST_AsText(location)
               FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1991,7 +2034,7 @@ class PlaceController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $userId = $user->id;
             //get the places with user id only
-            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','contact_person_phone','contact_person_name']);
             return response()->json($place);
             //return $deviceId;
           }

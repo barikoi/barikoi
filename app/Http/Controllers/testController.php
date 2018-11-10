@@ -457,8 +457,11 @@ class testController extends Controller
     public function aci(Request $request)
     {
 
-      $index = $this->SearchString("Bti amber", "BTI r", 1);
-      return $index;
+
+      $x='House, y, z,';
+      $x= str_replace(array('.', ','), '' , $x);
+      return $x;
+
 
     }
     public function createNGrams($word)
@@ -562,11 +565,10 @@ function SearchString($text, $pattern, $k)
     	return $result;
 }
 
-public function osm()
-{
-
-  return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
-}
+  public function osm()
+  {
+    return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+  }
 
 
 

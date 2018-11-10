@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         Commands\FixCopyDatabaseCommand::class,
         Commands\UpdateSqliteCommand::class,
         Commands\ConvertGisCommand::class,
+        Commands\TokenLogCommand::class,
         \Laravelista\LumenVendorPublish\VendorPublishCommand::class
     ];
 
