@@ -26,7 +26,9 @@ class User extends Model implements
         'device_ID',
         'hasPendingRewardRequest',
         'user_last_lat',
-        'user_last_lon'
+        'user_last_lon',
+        'home_pid',
+        'work_pid'
     ];
 
     /**

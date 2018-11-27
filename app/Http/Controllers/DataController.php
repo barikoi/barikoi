@@ -111,7 +111,8 @@ class DataController extends Controller {
         $polygon =$request->polygon;
         //$address = $request->address;
 
-        $places = DB::select("UPDATE places_2_copy SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE places SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE places_last_cleaned SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
 
           return response()->json([
               'Message' => 'Updated'

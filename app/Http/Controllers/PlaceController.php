@@ -32,6 +32,7 @@ use Carbon\Carbon;
 use TeamTNT\TNTSearch\TNTGeoSearch;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
+use TeamTNT\TNTSearch\TNTSearch;
 
 class PlaceController extends Controller
 {
@@ -58,115 +59,7 @@ class PlaceController extends Controller
         }
         return $randomString;
       }
-      // Store and generate random code
-      public function StorePlace(Request $request)
-      {
-        $string = $this->generateRandomString(4);
-        $number = $this->generateRandomNumber(4);
-        $Address = rtrim($request->Address,' ');
-        $Address = ltrim($request->Address,' ');
-        $ucode =  ''.$string.''.$number.'';
-        $lat = $request->latitude;
-        $lon = $request->longitude;
-        //check if it is private and less then 20 meter
-        if($request->flag==0){
-          $result = DB::table('places')
-          ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-          //->where('pType', '=','Food')
-          ->where('flag','=',0)
-          ->where('device_ID','=',$request->device_ID) // same user can not add
-          ->having('distance','<',0.01) //another private place in 50 meter
-          ->get();
-          $message='Can not add Multiple Private Address in 10 meter radius from Same Device';
-        }
-        //check if it is public and less then 50 meter
-        if($request->flag==1){
 
-          $result = DB::table('places')
-          ->select(DB::raw('*, ((ACOS(SIN('.$lat.' * PI() / 180) * SIN(latitude * PI() / 180) + COS('.$lat.' * PI() / 180) * COS(latitude * PI() / 180) * COS(('.$lon.' - longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515 * 1.609344) as distance'))
-          //->where('pType', '=','Food')
-          ->where('flag','=',1)
-          ->having('distance','<',0.005) //no one 20 meter for public
-          ->get();
-          $message='A Public Place is Available in 5 meter.';
-        }
-        /*return response()->json([
-        'Count' => $result->count()
-      ]);*/
-      if(count($result) === 0)
-      {
-        $input = new Place;
-        $input->longitude = $lon;
-        $input->latitude = $lat;
-        $input->Address = title_case($Address);
-        $input->city = trim($request->city);
-        $input->area = trim($request->area," ");
-        $input->postCode = $request->postCode;
-        $input->pType = $request->pType;
-        $input->subType = $request->subType;
-        //longitude,latitude,Address,city,area,postCode,pType,subType,flag,device_ID,user_id,email
-        if($request->has('flag'))
-        {
-          $input->flag = $request->flag;
-          if ($request->flag==1) {
-            DB::table('analytics')->increment('public_count');
-          }else{
-            DB::table('analytics')->increment('private_count');
-          }
-        }
-        if ($request->has('device_ID')) {
-          $input->device_ID = $request->device_ID;
-        }
-        if ($request->has('user_id')) {
-          $input->user_id = $request->user_id;
-        }
-        if ($request->has('email')){
-          $input->email = $request->email;
-        }
-        if ($request->has('route_description')){
-          $input->route_description = $request->route_description;
-        }
-        if ($request->has('contact_person_name')) {
-          $places->contact_person_name = $request->contact_person_name;
-        }
-
-        if ($request->has('contact_person_phone')) {
-          $places->contact_person_phone = $request->contact_person_phone;
-        }
-        $input->uCode = $ucode;
-        $input->isRewarded = 0;
-        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
-        $input->save();
-
-        //Slack Webhook : notify
-        define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
-        // Make your message
-        $message = array('payload' => json_encode(array('text' => "Someone Added a Place with Code:".$ucode. "")));
-        //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
-        // Use curl to send your message
-        $c = curl_init(SLACK_WEBHOOK);
-        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($c, CURLOPT_POST, true);
-        curl_setopt($c, CURLOPT_POSTFIELDS, $message);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
-        $res = curl_exec($c);
-        curl_close($c);
-
-        DB::table('analytics')->increment('code_count');
-        //return response()->json($ucode);
-
-        //everything went well, return code and the point he recived
-        return response()->json([
-          'uCode' => $ucode
-        ]);
-      }
-      else{
-        //can't add places in 20/50 mter, return a message
-        return response()->json([
-          'message' => $message
-        ]);
-      }
-    }
     //Mapper
     public function XauthAddNewPlace(Request $request){
       $yesterday = Carbon::yesterday()->toDateTimeString();
@@ -228,6 +121,12 @@ class PlaceController extends Controller
         }
         if ($request->has('number_of_floors')){
           $input->number_of_floors = $request->number_of_floors;
+        }
+        if ($request->has('contact_person_name')){
+          $input->contact_person_name = $request->contact_person_name;
+        }
+        if ($request->has('contact_person_phone')){
+          $input->contact_person_phone = $request->contact_person_phone;
         }
         $input->uCode = $ucode;
         $input->isRewarded = 1;
@@ -391,6 +290,12 @@ class PlaceController extends Controller
       }
       if ($request->has('route_description')){
         $input->route_description = $request->route_description;
+      }
+      if ($request->has('contact_person_name')){
+        $input->contact_person_name = $request->contact_person_name;
+      }
+      if ($request->has('contact_person_phone')){
+        $input->contact_person_phone = $request->contact_person_phone;
       }
 
       $input->uCode = $ucode;
@@ -1150,7 +1055,7 @@ class PlaceController extends Controller
     {
       Place::where('uCode','=',$barikoiCode)->delete();
       //DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
-      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+    /*  define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
       // Make your message
     //  $getuserData=User::where('id','=',$userId)->select('name')->first();
     //  $name=$getuserData->name;
@@ -1164,11 +1069,12 @@ class PlaceController extends Controller
       curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
       $res = curl_exec($c);
       curl_close($c);
+      */
       return response()->json('Place Deleted!');
 
     }
 
-    public function mucheFeli($barikoicode,Request $request)
+    public function mucheFeli(Request $request,$barikoicode)
     {
       $places = Place::where('uCode','=',$barikoicode)->first();
 
@@ -1187,7 +1093,7 @@ class PlaceController extends Controller
       $res = curl_exec($c);
       curl_close($c);
 
-    //  DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
+      DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
       $places->delete();
       return response()->json('Done');
     }
@@ -1199,9 +1105,10 @@ class PlaceController extends Controller
     public function halnagadMyPlace(Request $request,$id){
 
       $userId = $request->user()->id;
+
       $places = Place::where('uCode','=',$id)->orWhere('id',$id)->first();
       $image=Image::where('pid',$places->id)->delete();
-
+      $address = $places->Address;
       if ($request->has('longitude')) {
         $places->longitude = $request->longitude;
       }
@@ -1303,6 +1210,20 @@ class PlaceController extends Controller
 
 
       }
+      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      // Make your message
+      $getuserData=User::where('id','=',$userId)->select('name')->first();
+      $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$name."' UPDATED a Place To: '".title_case($request->Address)." From ".$address."")));
+      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+      // Use curl to send your message
+      $c = curl_init(SLACK_WEBHOOK);
+      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($c, CURLOPT_POST, true);
+      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+      $res = curl_exec($c);
+      curl_close($c);
 
       return response()->json('Updated');
 
@@ -1326,6 +1247,20 @@ class PlaceController extends Controller
       $places->flag = $request->flag;
       $places->save();
       //$splaces = SavedPlace::where('pid','=',$id)->update(['Address'=> $request->Address]);
+      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      // Make your message
+      $getuserData=User::where('id','=',$userId)->select('name')->first();
+      $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$name."' UPDATED a Place: '".title_case($request->Address)."' near '".$request->area.",".$request->city."")));
+      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+      // Use curl to send your message
+      $c = curl_init(SLACK_WEBHOOK);
+      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($c, CURLOPT_POST, true);
+      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+      $res = curl_exec($c);
+      curl_close($c);
 
       return response()->json('updated');
     }
@@ -1447,11 +1382,17 @@ class PlaceController extends Controller
         ORDER BY distance_in_meters
         LIMIT 20");
       }
-
-
       DB::table('analytics')->increment('search_count',1);
+      if (count($result)>0) {
+        return response()->json($result);
+      }else {
+        return response()->json(['Message' => 'Not Found'],200);
+      }
 
-      return response()->json($result);
+
+
+
+
 
     }
 
@@ -1607,7 +1548,7 @@ class PlaceController extends Controller
 
     public function tourism()
     {
-      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode']);
+      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone']);
 
       return $ghurbokoi->toJson();
     }
@@ -2108,6 +2049,40 @@ class PlaceController extends Controller
                   ]);
               }
           }
+
+          public function saveUserHome(Request $request,$id)
+          {
+            $user_id = $request->user()->id;
+            DB::table('users')->where('id',$user_id)->update(['home_pid'=>$id]);
+            return response()->json(['Message'=> 'Home Added']);
+          }
+          public function saveUserWork(Request $request,$id)
+          {
+            $user_id = $request->user()->id;
+            DB::table('users')->where('id',$user_id)->update(['work_pid'=>$id]);
+            return response()->json(['Message'=> 'Work Added']);
+          }
+
+
+        /*  public function updateTntIndex()
+          {
+            $tnt = new TNTSearch;
+             $tnt->loadConfig([
+                'driver'    => 'mysql',
+                'host'      => 'localhost',
+                'database'  => 'ethikana',
+                'username'  => 'root',
+                'password'  => 'root',
+                'storage'   => '/var/www/html/ethikana/storage/custom/'
+              ]);
+               $tnt->selectIndex('places.index');
+             $tnt->getIndex();
+              $data=DB::table('places')->orderBy('id', 'desc')->limit(1)->get(['id','Address']);
+              $id = $data->id;
+              //$index->insert(['id' => '11', 'title' => 'new title', 'article' => 'new article']);
+              return $data;
+
+          }*/
 
 
 

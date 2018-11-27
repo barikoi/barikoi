@@ -699,14 +699,23 @@ class SearchController extends Controller
 
 
     $q = $request->search;
-
+    if (strpos($q, ' rd') !== false || strpos($q, ' rd ') !== false || strpos($q, 'rd ') !== false || strpos($q, 'h ') !== false || strpos($q, ' h ') !== false || strpos($q, ' h') !== false) {
+      $q = str_replace(' rd', ' road',$q);
+      $q = str_replace(' rd ', ' road',$q);
+      $q = str_replace('rd ', ' road ',$q);
+      $q = str_replace('h ', 'house ',$q);
+      $q = str_replace(' h ', 'house ',$q);
+     // $q = str_replace(' h', 'house ',$q);
+    }
+    $q= ltrim($q,' ');
+    //$q = preg_replace("/[\/,]/", " ", $q);
     $res = $tnt->searchBoolean($q,20);
     if (count($res['ids'])>0) {
       $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
-      return response()->json(['places' => $place]);
+      return response()->json(['String' => $q,'places' => $place]);
     }
     else {
-      return response()->json(['places'=>'Not found']);
+      return response()->json(['String' => $q,'places'=>'Not found']);
     }
    }
 
@@ -732,6 +741,7 @@ class SearchController extends Controller
 
 
     $q = $request->search;
+
     $place = DB::connection('sqlite')->table('places_3')
        ->where('flag',1)
        ->where('new_address','Like','%'.$q.'%')
@@ -760,11 +770,14 @@ class SearchController extends Controller
              return response()->json(['places'=>$place ]);
            }
            else {
-             $res = $tnt->searchBoolean($request->search,10);
+
+             $q = preg_replace("/[\/,-]/", " ", $q);
+             $res = $tnt->searchBoolean($q,10);
              if (count($res['ids'])>0) {
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
                return response()->json(['places' => $place]);
              }else{
+               DB::table('Searchlytics')->insert(['query' => $q]);
                return new JsonResponse([
                  'places' =>[
                    "Message"=> "Not Found",

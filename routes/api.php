@@ -82,7 +82,8 @@ $api->version('v1',  function ($api) {
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/','App\Http\Controllers\SearchController@TestFuzzySearch');
   $api->get('fix/data/inside/polygon','App\Http\Controllers\DataController@FixDataInsidePolygon');
-    $api->get('osm/','App\Http\Controllers\testController@osm');
+  $api->get('osm/','App\Http\Controllers\testController@osm');
+  //$api->get('index/','App\Http\Controllers\PlaceController@updateTntIndex');
   $api->group([
       'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
   ], function ($api) {
@@ -94,8 +95,8 @@ $api->version('v1',  function ($api) {
   //$api->get('/api/search/autocomplete/test/{apikey}/place','App\Http\Controllers\BusinessApiController@testSearchthree'); //
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
-  $api->get('api/search/reverse/{apikey}/nearby/{distance}/{limit}','App\Http\Controllers\BusinessApiController@reverseNearBy');
-  $api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
+  $api->get('api/search/nearby/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@reverseNearBy');
+  //$api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
 
   $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGeocode');
@@ -254,13 +255,6 @@ $api->version('v1',  function ($api) {
       'as' => 'single.place',
       'uses' => 'App\Http\Controllers\PlaceController@getListViewItem',
     ]);
-    //Save a place
-    $api->post('/save/place',[
-      'as' => 'place.save',
-      'uses' => 'App\Http\Controllers\PlaceController@savedPlaces',
-
-    ]);
-
     $api->get('/saved/place/get/{id}',[
       'as' => 'places.saved.get',
       'uses' => 'App\Http\Controllers\PlaceController@getSavedPlace',
@@ -337,13 +331,16 @@ $api->version('v1',  function ($api) {
       $api->get('get/area','App\Http\Controllers\DataController@getArea');
 
 
+
       /*@@ data controller address
       */
 
     });
     $api->get('area/polygon','App\Http\Controllers\DataController@getAreaDataPolygonWise');
     $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearch');
+    /// This search is used in current app and every other internal search
     $api->post('/tnt/search/test','App\Http\Controllers\SearchController@testSearchthree');
+    $api->post('/tnt/search/two','App\Http\Controllers\SearchController@testSearchtwo');
     $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@getTntsearch');
 
 
@@ -356,17 +353,18 @@ $api->version('v1',  function ($api) {
     ], function ($api) {
 
       //Test Routes: with images
+      //ADD a new PLACE
       $api->post('/test/auth/place/newplace',[
         'as' => 'test.api.auth.place.new',
         'uses' => 'App\Http\Controllers\PlaceController@authAddNewPlace',
       ]);
-      //
+      // MAPPERS ADDING A NEW PLACE
       $api->post('/test/auth/place/newplace/mapper',[
         'as' => 'test.api.auth.place.new.mapper',
         'uses' => 'App\Http\Controllers\PlaceController@XauthAddNewPlace',
       ]);
 
-
+      //add place with custom CODE
       $api->post('/test/auth/place/newplacecustom',[
         'as' => 'test.api.auth.place.newcustom',
         'uses' => 'App\Http\Controllers\PlaceController@authAddCustomPlace',
@@ -382,7 +380,7 @@ $api->version('v1',  function ($api) {
           'uses' => 'App\Http\Controllers\Auth\AuthController@patchRefresh',
           'as' => 'api.auth.refresh'
       ]);
-
+      // GET USER INFORMATION
       $api->get('/auth/user', [
           'uses' => 'App\Http\Controllers\Auth\AuthController@getUser',
           'as' => 'api.auth.user'
@@ -394,7 +392,7 @@ $api->version('v1',  function ($api) {
           'as' => 'api.auth.invalidate'
       ]);
 
-      //analytics
+      //GET PLACES analytics
       $api->get('/analytics',[
         'as' => 'place.collection.analytics',
         'uses' => 'App\Http\Controllers\PlaceController@analytics',
@@ -416,10 +414,12 @@ $api->version('v1',  function ($api) {
         'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserIdPaginate',
         'as' => 'api.auth.uid.paginate'
       ]);
+      // USED IN MOBILE APP and used to provide data with a limit (Dtool/Verification APP)
       $api->get('/auth/placebyuid/{deviceid}', [
         'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserDeviceId',
         'as' => 'api.auth.deviceid'
       ]);
+      // Updates a places position with drag and drop! USED in Verify APP
       $api->patch('/drop/update/app/{id}',[
         'as' => 'drop.update.app',
         'uses' => 'App\Http\Controllers\PlaceController@dropEditApp',
@@ -428,10 +428,19 @@ $api->version('v1',  function ($api) {
 
 
       //Show all places by User ID: for web mainly
+      /// get places for the users! in the app and web
       $api->get('/auth/placeby/userid/', [
         'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserId',
         'as' => 'api.auth.userid'
       ]);
+
+      /*
+      @@ USER HOME AND WORK
+
+      */
+      $api->get('save/user/home/{pid}','App\Http\Controllers\PlaceController@saveUserHome');
+      $api->get('save/user/work/{pid}','App\Http\Controllers\PlaceController@saveUserWork');
+
 
       /**
       @@Delivery Koi Routes
@@ -500,6 +509,7 @@ $api->version('v1',  function ($api) {
       /**
         @@data manipulation
       **/
+      //fix data from the admin (Data FIX)
       $api->get('replace','App\Http\Controllers\DataController@replace');
       $api->get('updateword','App\Http\Controllers\DataController@UpdateWordZone');
       $api->get('get/ward','App\Http\Controllers\PlaceController@getWard');
@@ -516,6 +526,7 @@ $api->version('v1',  function ($api) {
         'as' => 'place.nearby.public',
         'uses' => 'App\Http\Controllers\PlaceController@amarashpashAuth',
       ]);
+      //GET CATAGORIZED nearby DATA
       $api->get('/public/find/nearby/by/catagory','App\Http\Controllers\PlaceController@amarashpashCatagorized');
       //**********
 
@@ -526,20 +537,25 @@ $api->version('v1',  function ($api) {
         'uses' => 'App\Http\Controllers\Auth\AuthController@AppKhujTheSearch',
       ]);
 
-      //ADN: Update Place by Place Code
+      //ADN: Update Place by Place Code or PLACE ID
+
       $api->post('/auth/place/update/{placeid}',[
         'as' => 'api.auth.places.update',
         'uses' => 'App\Http\Controllers\PlaceController@halnagadMyPlace',
       ]);
+      $api->patch('update/place/{placeid}',[
+        'as' => 'api.auth.places.update',
+        'uses' => 'App\Http\Controllers\PlaceController@halnagadMyPlace',
+      ]);
 
-      //ADN:Delete place by BariKoi code
+      //ADN:Delete place by BariKoi code or place ID
       $api->get('/auth/place/delete/{barikoicode}',[
         'as' => 'auth.places.delete',
         'uses' => 'App\Http\Controllers\PlaceController@mucheFeliMyPlace',
       ]);
 
     //delete place by place id()
-     $api->get('/place/delete/{barikoicode}',[
+     $api->get('/place/delete/{id}',[
        'as' => 'places.delete',
        'uses' => 'App\Http\Controllers\PlaceController@mucheFeli',
      ]);
@@ -554,7 +570,7 @@ $api->version('v1',  function ($api) {
         'as' => 'api.auth.places.favorite.add',
         'uses' => 'App\Http\Controllers\PlaceController@authAddFavoritePlace',
       ]);
-      //ADN:remove place from favorite
+      //ADN:remove place from favorite or from saved places
       $api->get('/auth/saved/place/delete/{barikoicode}',[
         'as' => 'api.auth.places.favorite.delete',
         'uses' => 'App\Http\Controllers\PlaceController@authDeleteFavoritePlace',
@@ -595,13 +611,13 @@ $api->version('v1',  function ($api) {
         'uses' => 'App\Http\Controllers\BusinessApiController@ShowBusinessDescription',
       ]);
 
-      //Get Users List
+      //Get Users List for the admin
       $api->get('/auth/admin/userlist',[
         'as' => 'admin.listusers',
         'uses' => 'App\Http\Controllers\Auth\AuthController@getUserList',
       ]);
 
-      //user info for Admin
+      //user info for the admin
       $api->get('/user/{id}',[
         'as' => 'user.individual',
         'uses' => 'App\Http\Controllers\UserManagementController@index',
@@ -612,12 +628,12 @@ $api->version('v1',  function ($api) {
         'as' => 'user.profile.details',
         'uses' => 'App\Http\Controllers\UserProfileController@index'
       ]);
-//User profile photo
+//User profile  picture
       $api->post('/user/profile/photo',[
         'as' => 'upolad.profile.pic',
         'uses' => 'App\Http\Controllers\UserProfileController@storeProPic',
       ]);
-
+      // GET USER PROFILE PICTURE
       $api->get('/user/profile/photo',[
         'as' => 'show.profile.pic',
         'uses' => 'App\Http\Controllers\UserProfileController@showProPic',
@@ -723,33 +739,8 @@ $api->version('v1',  function ($api) {
         'uses' => 'App\Http\Controllers\RewardsManagementController@destroy',
       ]);
 
-      //Enterprise Routes
-      $api->get('/enterprise/places', [
-        'as' => 'enterprise.total.places',
-        'uses' => 'App\Http\Controllers\EnterpriseAnalyticsController@index'
-      ]);
-      $api->post('/enterprise/random/place', [
-        'as' => 'enterprise.random.place',
-        'uses' => 'App\Http\Controllers\EnterprisePlacesController@storeRandom'
-      ]);
-      $api->post('/enterprise/custom/place', [
-        'as' => 'enterprise.custom.place',
-        'uses' => 'App\Http\Controllers\EnterprisePlacesController@storeCustom'
-      ]);
-      $api->post('/enterprise/place/{id}', [
-        'as' => 'enterprise.update.place',
-        'uses' => 'App\Http\Controllers\EnterprisePlacesController@update'
-      ]);
 
-      $api->get('/enterprise/place/{id}', [
-        'as' => 'enterprise.single.place',
-        'uses' => 'App\Http\Controllers\EnterprisePlacesController@show'
-      ]);
-      $api->delete('/enterprise/place/{id}', [
-        'as' => 'enterprise.delete.place',
-        'uses' => 'App\Http\Controllers\EnterprisePlacesController@destroy'
-      ]);
-      //End- Enterprie Routes
+
       $api->post('/image/delete', [
         'as' => 'image.delete',
         'uses' => 'App\Http\Controllers\ImageController@destroyImage'
@@ -766,16 +757,8 @@ $api->version('v1',  function ($api) {
       ]);
 
 
-      $api->post('/up', [
-        'as' => 'test.mtb.atm',
-        'uses' => 'App\Http\Controllers\testController@mtb',
-      ]);
 
-      //upload hospital csv
-      $api->post('/exc1', [
-        'as' => 'test.excel1',
-        'uses' => 'App\Http\Controllers\testController@excel',
-      ]);
+
 
 
       /**
