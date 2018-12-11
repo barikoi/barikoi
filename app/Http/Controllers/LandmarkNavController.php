@@ -204,4 +204,90 @@ class LandmarkNavController extends Controller
     {
         //
     }
+
+    public function LandmarkNav(Request $request)
+    {
+      $latA=$request->latitudeA;
+      $lonA=$request->longitudeA;
+      $latB=$request->latitudeB;
+      $lonB=$request->longitudeB;
+      $distance = 0.5;
+
+      $StartToLandmark = DB::select("SELECT id, ST_Distance_Sphere(Point($lonA,$latA), location) as distance, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lonA+($distance/111)), ($latA+($distance/111))),
+        Point(($lonA-($distance/111)), ($latA-($distance/111)))
+      ), location ) AND pType = 'Landmark'
+      ORDER BY distance LIMIT 1");
+
+      $resA=json_decode(json_encode($StartToLandmark),true);
+      $DistanceFromStartToLandmark=$resA[0]['distance'];
+      $LongitudeLandmark=$resA[0]['longitude'];
+      $LatitudeLandmark=$resA[0]['latitude'];
+
+      $LandmarkToBusStand = DB::select("SELECT id, ST_Distance_Sphere(Point($LongitudeLandmark,$LatitudeLandmark), location) as distance, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($LongitudeLandmark+($distance/111)), ($LatitudeLandmark+($distance/111))),
+        Point(($LongitudeLandmark-($distance/111)), ($LatitudeLandmark-($distance/111)))
+      ), location ) AND subType = 'Bus Stand'
+      ORDER BY distance LIMIT 1");
+
+      $StartToBusStand = DB::select("SELECT id, ST_Distance_Sphere(Point($lonA,$latA), location) as distance, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lonA+($distance/111)), ($latA+($distance/111))),
+        Point(($lonA-($distance/111)), ($latA-($distance/111)))
+      ), location ) AND subType = 'Bus Stand'
+      ORDER BY distance LIMIT 1");
+
+      $resB=json_decode(json_encode($StartToBusStand),true);
+      $DistanceFromStartToBustand=$resB[0]['distance'];
+
+
+      $EndToBusStand = DB::select("SELECT id, ST_Distance_Sphere(Point($lonA,$latA), location) as distance, longitude,latitude,Address,city,area,pType,subType,uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lonB+($distance/111)), ($latB+($distance/111))),
+        Point(($lonB-($distance/111)), ($latB-($distance/111)))
+      ), location ) AND subType = 'Bus Stand'
+      ORDER BY distance LIMIT 1");
+
+      $EndToLandmark = DB::select("SELECT id, ST_Distance_Sphere(Point($lonB,$latB), location) as distance, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+        Point(($lonB+($distance/111)), ($latB+($distance/111))),
+        Point(($lonB-($distance/111)), ($latB-($distance/111)))
+      ), location ) AND pType = 'Landmark'
+      ORDER BY distance LIMIT 1");
+
+      $TotalDistanceOfBusLandmark = $DistanceFromStartToBustand+$DistanceFromStartToLandmark;
+
+      $res=$this->haversineGreatCircleDistance($latA,$lonA,$latB,$lonB);
+      if ($TotalDistanceOfBusLandmark<$res) {
+        return New  JsonResponse([
+              "Total Strightline Distance" => $res/1000,
+              "halfway" => round($res/2,6,PHP_ROUND_HALF_UP),
+              "Start To Landmark" => $StartToLandmark,
+              "Landmark to Bus Stand"=>$LandmarkToBusStand,
+              "Bus stand to End" => $EndToBusStand,
+              "Landmark to End"=>$EndToLandmark,
+          ],200);
+        /*return response()->json(['Start To Landmark' => $StartToLandmark,'Landmark to Bus Stand'=>$LandmarkToBusStand,
+
+        //'Distance from Start to Landmark'=>$DistanceFromStartToLandmark,
+        //'Distance from Start to Bus Stand '=>$DistanceFromStartToBustand,
+        'End To Bus Stand' => $EndToBusStand,
+        'End To Landmark'=> $EndToLandmark,
+        'Distance Start to End' =>  $res/1000
+      ]);*/
+      }
+      else {
+        return response()->json([
+          'Message' => 'You can just walk or take a rickshaw'
+      ]);
+    }
+
+    }
 }

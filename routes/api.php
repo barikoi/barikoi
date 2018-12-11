@@ -53,6 +53,10 @@ $api->version('v1',  function ($api) {
     'as' => 'nearest.landmarks',
     'uses' => 'App\Http\Controllers\LandmarkNavController@index',
   ]);
+  $api->post('/landmark/nav', [
+    'as' => 'nearest.landmarks',
+    'uses' => 'App\Http\Controllers\LandmarkNavController@LandmarkNav',
+  ]);
 //Route to get client IP
   $api->get('/ip', [
     'as' => 'ip',

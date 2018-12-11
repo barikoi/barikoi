@@ -1268,7 +1268,7 @@ class PlaceController extends Controller
     public function placeType(Request $request)
     {
       $type = new PlaceType;
-      $type->type = $request->type;
+      $type->type = $request->pType;
       $type->save();
 
       return response()->json('Done');
@@ -1276,8 +1276,8 @@ class PlaceController extends Controller
     public function placeSubType(Request $request)
     {
       $type = new PlaceSubType;
-      $type->type = $request->type;
-      $type->subtype = $request->subtype;
+      $type->type = $request->pType;
+      $type->subtype = $request->subType;
       $type->save();
       return response()->json('Done');
     }

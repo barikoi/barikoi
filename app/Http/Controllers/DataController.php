@@ -97,6 +97,7 @@ class DataController extends Controller {
       public function replace(Request $request)
       {
         DB::table('places')->update(['Address' => DB::raw("REPLACE(Address, '".$request->x."', '".$request->y."')")]);
+        DB::table('places_last_cleaned')->update(['Address' => DB::raw("REPLACE(Address, '".$request->x."', '".$request->y."')")]);
 
         return response()->json('ok');
       }

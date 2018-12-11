@@ -11,7 +11,7 @@ class GPXESController extends Controller {
     {
       $id = $request->user()->id;
       $gpx = GPX::create($request->all()+['user_id'=>$request->user()->id]);
-      return response()->json(['Message'=>$request->user()->id]);
+      return response()->json(['UserID'=>$request->user()->id,'Message'=>'Inserted']);
     }
     public function read()
     {
