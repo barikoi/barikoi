@@ -1125,9 +1125,6 @@ class PlaceController extends Controller
         $places->area = $request->area;
       }
 
-      //  if ($request->has('user_id')) {
-      //  $places->user_id = $userId;
-      //}
       if ($request->has('postCode')) {
         $places->postCode = $request->postCode;
       }
@@ -1401,7 +1398,7 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
 
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location), postCode,
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1419,7 +1416,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
 
       $distance = 0.1;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, postCode ,uCode,contact_person_phone,contact_person_name,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1438,7 +1435,7 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
       $distance = 0.3;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, postCode,uCode,contact_person_phone,contact_person_name,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1869,7 +1866,7 @@ class PlaceController extends Controller
 
             public function getRoadWise(Request $request)
             {
-              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode','area','city','postCode']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }
@@ -1951,9 +1948,9 @@ class PlaceController extends Controller
           //$placesWithDvid=Place::where('device_ID','=',$deviceId)->where('user_id', null)->update(['user_id' => $userId]);
           //get the places with user id only
           if ($request->has('limit')) {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
           }else {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
           }
 
           return $place->toJson();
@@ -1975,7 +1972,7 @@ class PlaceController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $userId = $user->id;
             //get the places with user id only
-            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','contact_person_phone','contact_person_name']);
+            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','postCode','uCode', 'area','city','contact_person_phone','contact_person_name']);
             return response()->json($place);
             //return $deviceId;
           }
@@ -1985,12 +1982,11 @@ class PlaceController extends Controller
           {
               $user = JWTAuth::parseToken()->authenticate();
               $userId = $user->id;
-              $savedPlaces=Place::with('images')
-              ->join('saved_places', function ($join) {
+              $savedPlaces=Place::join('saved_places', function ($join) {
                   $join->on('places.id', '=', 'saved_places.pid');
               })
               ->where('saved_places.user_id','=',$userId)
-              ->get(['Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+              ->get(['places.id','Address','longitude','latitude','pType','subType','postCode','uCode', 'area','city','contact_person_phone','contact_person_name']);
                return $savedPlaces->toJson();
           }
           //Add Favorite Place

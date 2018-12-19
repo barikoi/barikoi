@@ -211,7 +211,7 @@ class LandmarkNavController extends Controller
       $lonA=$request->longitudeA;
       $latB=$request->latitudeB;
       $lonB=$request->longitudeB;
-      $distance = 0.5;
+      $distance = 2;
 
       $StartToLandmark = DB::select("SELECT id, ST_Distance_Sphere(Point($lonA,$latA), location) as distance, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
       FROM places
@@ -267,7 +267,7 @@ class LandmarkNavController extends Controller
       $res=$this->haversineGreatCircleDistance($latA,$lonA,$latB,$lonB);
       if ($TotalDistanceOfBusLandmark<$res) {
         return New  JsonResponse([
-              "Total Strightline Distance" => $res/1000,
+              "Total Strightline Distance" => $res,
               "halfway" => round($res/2,6,PHP_ROUND_HALF_UP),
               "Start To Landmark" => $StartToLandmark,
               "Landmark to Bus Stand"=>$LandmarkToBusStand,
