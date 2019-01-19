@@ -40,9 +40,6 @@ class SearchController extends Controller
      */
 
 
-
-
-
     public function findNearby(Request $request){
         $terms=Input::get('query');
         if($request->has('longitude'))
@@ -739,15 +736,10 @@ class SearchController extends Controller
     $tnt->fuzziness = true;
     $tnt->asYouType = true;
 
+    if ($request->has('search')) {
+      $q = $request->search;
 
-    $q = $request->search;
-
-    $place = DB::connection('sqlite')->table('places_3')
-       ->where('flag',1)
-       ->where('new_address','Like','%'.$q.'%')
-       ->orWhere('alternate_address','Like','%'.$q.'%')
-       //->orWhere('uCode','=',$q)
-       ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+       $place = $this->linearsearch($q);
        if (count($place)>0) {
          return response()->json(['places'=>$place ]);
        }else {
@@ -756,16 +748,12 @@ class SearchController extends Controller
          $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
          $x = explode(" ",$str);
          $size = sizeof($x);
-         $place = DB::connection('sqlite')->table('places_3')
-         ->where('flag',1)
-         ->where('new_address','Like','%'.$str.'%')
-         ->orWhere('alternate_address','Like','%'.$str.'%')
-        // ->orderBy('id','desc')
-         ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+         $place = $this->linearsearch($str);
+
          if (count($place)>0) {
            return response()->json(['places'=>$place ]);
          }else {
-           $place = Place::where('uCode','=',$request->search)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+           $place = $this->uCodeSearch($q);
            if (count($place)>0) {
              return response()->json(['places'=>$place ]);
            }
@@ -775,24 +763,56 @@ class SearchController extends Controller
              $res = $tnt->searchBoolean($q,10);
              if (count($res['ids'])>0) {
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+
                return response()->json(['places' => $place]);
              }else{
-               DB::table('Searchlytics')->insert(['query' => $q]);
-               return new JsonResponse([
-                 'places' =>[
-                   "Message"=> "Not Found",
+               $x = explode(" ",$q);
+               $size = sizeof($x);
+               $y=''.$x[1].' '.$x[sizeof($x)-1].'';
+               $res = $tnt->searchBoolean($y,10);
+               if (count($res['ids'])>0) {
+                  $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+                  return response()->json(['y'=> $y,'places' => $place]);
+                }else {
+                  DB::table('Searchlytics')->insert(['query' => $q]);
+                  return response()->json([
+                    'message' => 'not found',
+                    'status' => '200',
+                  ]);
+                }
 
-                 ]
-
-                 ]);
              }
            }
 
          }
        }
+     }else {
+       return new JsonResponse([
+         'message' => 'empty request',
+       ]);
+     }
 
 
 
+   }
+
+   public function linearsearch($q)
+   {
+     $place = DB::connection('sqlite')->table('places_3')
+     ->where('flag',1)
+     ->where('new_address','Like','%'.$q.'%')
+     ->orWhere('alternate_address','Like','%'.$q.'%')
+     ->limit(10)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+     return $place;
+   }
+   public function uCodeSearch($q)
+   {
+     $place = DB::table('places_3')->where('uCode','=',$q)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+     return $place;
+   }
+   public function TntId($res)
+   {
+     $place;
    }
 
 
@@ -863,12 +883,15 @@ class SearchController extends Controller
             ->orderBy('id','desc')
             ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
            if(count($place)>=0 || count($place)>=20) {
-             $res = $tnt->searchBoolean($str,20);
+             $q = preg_replace("/[\/,-]/", " ", $q);
+             $res = $tnt->searchBoolean($q,20);
+
              if (count($res['ids'])>0) {
+
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
                return response()->json(['places' => $place]);
              }else{
-               return response()->json(['places'=>'Not found']);
+               return response()->json(['Message'=>'Not found']);
              }
 
            }
@@ -891,12 +914,14 @@ class SearchController extends Controller
                  ->orderBy('id','desc')
                  ->limit(20)->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at']);
               if(count($place)>=0 || count($place)>=20) {
-                $res = $tnt->searchBoolean($str,20);
+                $q = preg_replace("/[\/,-]/", " ", $q);
+                $res = $tnt->searchBoolean($q,20);
                 if (count($res['ids'])>0) {
+
                   $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
                   return response()->json(['places' => $place]);
                 }else {
-                  return response()->json(['places'=>'Not found']);
+                  return response()->json(['Message'=>'Not found']);
                 }
 
           }

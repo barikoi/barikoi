@@ -206,7 +206,7 @@ class PlaceController extends Controller
         // Make your message
         $getuserData=User::where('id','=',$userId)->select('name')->first();
         $name=$getuserData->name;
-        $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($request->Address)."' near '".$request->area.",".$request->city."' area with Code:".$ucode."")));
+        $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($request->Address)."' near '".$request->area.",".$request->city."' area with Code:".$ucode." subType: ".$subType.", pType: ".$request->pType."")));
         //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
         // Use curl to send your message
         $c = curl_init(SLACK_WEBHOOK);
@@ -831,7 +831,7 @@ class PlaceController extends Controller
 
     public function getListViewItem($code)
     {
-      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_name','contact_person_phone','road_details','route_description']);
+      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_name','contact_person_phone','road_details','route_description']);
       return response()->json($place);
     }
 
@@ -840,7 +840,7 @@ class PlaceController extends Controller
     public function KhujTheSearchApp($id)
     {
 
-      $place = Place::where('device_ID','=',$id)->where('user_id', null)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+      $place = Place::where('device_ID','=',$id)->where('user_id', null)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city']);
 
     }
 
@@ -1155,6 +1155,10 @@ class PlaceController extends Controller
       if ($request->has('number_of_floors')){
         $places->number_of_floors = $request->number_of_floors;
       }
+      if ($request->has('longitude') && $request->has('latitude')) {
+        $places->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
+
+      }
 
       $places->save();
 
@@ -1211,7 +1215,7 @@ class PlaceController extends Controller
       // Make your message
       $getuserData=User::where('id','=',$userId)->select('name')->first();
       $name=$getuserData->name;
-      $message = array('payload' => json_encode(array('text' => "'".$name."' UPDATED a Place To: '".title_case($request->Address)." From ".$address."")));
+      $message = array('payload' => json_encode(array('text' => "'".$name."' UPDATED a Place To: '".title_case($request->Address)." From ".$address." pType: ".$request->pType.", Subtype: ".$request->subType."")));
       //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
       // Use curl to send your message
       $c = curl_init(SLACK_WEBHOOK);
@@ -1387,10 +1391,6 @@ class PlaceController extends Controller
       }
 
 
-
-
-
-
     }
 
     public function amarashpashVerification(Request $request)
@@ -1545,7 +1545,7 @@ class PlaceController extends Controller
 
     public function tourism()
     {
-      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone']);
+      $ghurbokoi = Place::with('images')->where('pType','=','Tourism')->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone']);
 
       return $ghurbokoi->toJson();
     }
@@ -1853,20 +1853,20 @@ class PlaceController extends Controller
             }
             public function getAreaWise(Request $request)
             {
-              $Place = DB::table('places')->where('area', 'LIKE',$request->area)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+              $Place = DB::table('places')->where('area', 'LIKE',$request->area)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Area' => $Place]);
             }
             public function getWardWise(Request $request)
             {
-              $Place = DB::table('places')->where('ward',$request->ward)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city']);
+              $Place = DB::table('places')->where('ward',$request->ward)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }
 
             public function getRoadWise(Request $request)
             {
-              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode','area','city','postCode']);
+              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','uCode','area','city','postCode']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }
@@ -1948,9 +1948,9 @@ class PlaceController extends Controller
           //$placesWithDvid=Place::where('device_ID','=',$deviceId)->where('user_id', null)->update(['user_id' => $userId]);
           //get the places with user id only
           if ($request->has('limit')) {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
           }else {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','ward','zone','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
           }
 
           return $place->toJson();

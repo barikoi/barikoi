@@ -53,6 +53,11 @@ class Handler extends ExceptionHandler
                 'message' => $e->getMessage() ?: $this->getMessageFromClassName($e),
             ], $e->getStatusCode());
         }
+        if ($e instanceof ModelNotFoundException) {
+          return new JsonResponse([
+              'message' => $e->getMessage() ?: $this->getMessageFromClassName($e),
+          ], $e->getStatusCode());
+        }
 
 
         return parent::render($request, $e);

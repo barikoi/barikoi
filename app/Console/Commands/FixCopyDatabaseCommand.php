@@ -39,7 +39,7 @@ class FixCopyDatabaseCommand extends Command
     {
       $startTimer = microtime(true);
       $this->line("updating place last cleaned for you . . . ");
-      DB::select("INSERT IGNORE INTO places_last_cleaned SELECT * FROM places");
+      DB::select("INSERT IGNORE INTO placesf SELECT * FROM places");
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_3')->truncate();
       $this->line("\nCopying the database for you . . . ");
@@ -57,7 +57,7 @@ class FixCopyDatabaseCommand extends Command
       		    longitude,
               latitude,
               city,area,postCode,pType,subtype,flag,uCode,created_at, route_description, contact_person_phone
-       FROM places_last_cleaned");
+       FROM placesf");
       $this->line("\n\nFixing the new address for you . . . ");
       DB::select("UPDATE places_3 SET new_address = REPLACE(new_address, ', ',',');");
       $this->line("\nfixing comma to comma space ");
