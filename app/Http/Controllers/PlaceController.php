@@ -1054,6 +1054,9 @@ class PlaceController extends Controller
     public function mucheFeliMyPlace(Request $request,$barikoiCode)
     {
       Place::where('uCode','=',$barikoiCode)->delete();
+      DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
+      DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
+      DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
       //DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
     /*  define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
       // Make your message
@@ -1094,6 +1097,8 @@ class PlaceController extends Controller
       curl_close($c);
 
       DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
+      DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
+      DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
       $places->delete();
       return response()->json('Done');
     }
@@ -1211,6 +1216,8 @@ class PlaceController extends Controller
 
 
       }
+      if ($request->has('pType') && $request->has('subType')) {
+
       define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
       // Make your message
       $getuserData=User::where('id','=',$userId)->select('name')->first();
@@ -1225,8 +1232,24 @@ class PlaceController extends Controller
       curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
       $res = curl_exec($c);
       curl_close($c);
+    }else {
+      define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+      // Make your message
+      $getuserData=User::where('id','=',$userId)->select('name')->first();
+      $name=$getuserData->name;
+      $message = array('payload' => json_encode(array('text' => "'".$name."' UPDATED a Place To: '".title_case($request->Address)." From ".$address."")));
+      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+      // Use curl to send your message
+      $c = curl_init(SLACK_WEBHOOK);
+      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($c, CURLOPT_POST, true);
+      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+      $res = curl_exec($c);
+      curl_close($c);
+    }
 
-      return response()->json('Updated');
+      return response()->json(['message' => 'Updated', 'status code'=> '200']);
 
     }
     //update
@@ -1274,14 +1297,31 @@ class PlaceController extends Controller
 
       return response()->json('Done');
     }
+    public function placeTypeUpdate(Request $request,$id)
+    {
+      $type = PlaceType::findOrFail($id);
+      $type->type = $request->pType;
+      $type->save();
+
+      return response()->json('Done');
+    }
     public function placeSubType(Request $request)
     {
       $type = new PlaceSubType;
       $type->type = $request->pType;
       $type->subtype = $request->subType;
       $type->save();
-      return response()->json('Done');
+      return response()->json('updated');
     }
+    public function placeSubTypeUpdate(Request $request,$id)
+    {
+      $type = PlaceSubType::findOrFail($id);
+      $type->type = $request->pType;
+      $type->subtype = $request->subType;
+      $type->save();
+      return response()->json('updated');
+    }
+
     public function getPlaceType()
     {
       $type = PlaceType::all();
@@ -1389,6 +1429,10 @@ class PlaceController extends Controller
       }else {
         return response()->json(['Message' => 'Not Found'],200);
       }
+
+
+
+
 
 
     }
@@ -1745,9 +1789,6 @@ class PlaceController extends Controller
                   ), location )
                   ORDER BY distance_in_meters LIMIT 1");
 
-                  return $result;
-
-
               return response()->json($result);
             }
 
@@ -1866,7 +1907,7 @@ class PlaceController extends Controller
 
             public function getRoadWise(Request $request)
             {
-              $Place = Place::with('images')->where('Address','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','uCode','area','city','postCode']);
+              $Place = DB::table('placesf')->where('area','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','uCode','area','city','postCode']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }

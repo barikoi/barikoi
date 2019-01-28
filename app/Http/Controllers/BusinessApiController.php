@@ -709,23 +709,24 @@ public function nearbyCatagorized(Request $request, $apikey,$distance=0.5, $limi
       $lon = $request->longitude;
       $distance = 1.5;
       if ($request->has('ptype')) {
-        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+        $ptype= $request->ptype;
+        $result = $this->rectangularSearch($lon,$lat,$ptype,$limit,$distance);/*DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
         FROM places
         WHERE ST_Contains( ST_MakeEnvelope(
           Point(($lon+($distance/111)), ($lat+($distance/111))),
           Point(($lon-($distance/111)), ($lat-($distance/111)))
         ), location ) AND ( pType LIKE '%$request->ptype%')
         ORDER BY distance_in_meters
-        LIMIT $limit");
+        LIMIT $limit");*/
       }else {
-        $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+        $result = $this->rectangularSearch($lon,$lat,$ptype,$limit,$distance);/*DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
         FROM places
         WHERE ST_Contains( ST_MakeEnvelope(
           Point(($lon+($distance/111)), ($lat+($distance/111))),
           Point(($lon-($distance/111)), ($lat-($distance/111)))
-        ), location ) AND (subType LIKE '%$request->subtype%')
+        ), location ) AND (subType LIKE '%$request->ptype%')
         ORDER BY distance_in_meters
-        LIMIT $limit");
+        LIMIT $limit");*/
       }
       if (count($result)>0) {
         return response()->json(['Place' => $result]);
@@ -748,6 +749,19 @@ public function nearbyCatagorized(Request $request, $apikey,$distance=0.5, $limi
       'message' => 'Invalid or No Regsitered Key',
     ]);
   }
+}
+public function rectangularSearch($lon,$lat,$data, $limit=20,$distance = 1.5)
+{
+
+  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+  FROM places
+  WHERE ST_Contains( ST_MakeEnvelope(
+    Point(($lon+($distance/111)), ($lat+($distance/111))),
+    Point(($lon-($distance/111)), ($lat-($distance/111)))
+  ), location ) AND (pType LIKE '%$data%')
+  ORDER BY distance_in_meters
+  LIMIT $limit");
+  return $result;
 }
 
 

@@ -39,7 +39,7 @@ class FixCopyDatabaseCommand extends Command
     {
       $startTimer = microtime(true);
       $this->line("updating place last cleaned for you . . . ");
-      DB::select("INSERT IGNORE INTO placesf SELECT * FROM places");
+      //DB::select("INSERT IGNORE INTO placesf SELECT * FROM places");
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_3')->truncate();
       $this->line("\nCopying the database for you . . . ");

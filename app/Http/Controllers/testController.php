@@ -567,7 +567,11 @@ function SearchString($text, $pattern, $k)
 
   public function osm()
   {
-    return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+    $str = DB::table('places_3')->limit(20)->get(['Address']);
+
+    //preg_match_all('!\d+!', $str->Address, $matches);
+    return response()->json($str);
+    //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
   }
 
 

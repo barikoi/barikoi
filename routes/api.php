@@ -100,7 +100,7 @@ $api->version('v1',  function ($api) {
   $api->get('/api/search/geocode/{apikey}/place/{id}','App\Http\Controllers\BusinessApiController@geocode');
   $api->get('api/search/reverse/geocode/{apikey}/place','App\Http\Controllers\BusinessApiController@reverseGeocodeNew');
   $api->get('api/search/nearby/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@reverseNearBy');
-  $api->get('api/search/nearby/catagory/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@nearbyCatagorized');
+  $api->get('api/search/nearby/category/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@nearbyCatagorized');
   //$api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
 
@@ -346,7 +346,7 @@ $api->version('v1',  function ($api) {
     /// This search is used in current app and every other internal search
     $api->post('/tnt/search/test','App\Http\Controllers\SearchController@testSearchthree');
     $api->post('/tnt/search/two','App\Http\Controllers\SearchController@testSearchtwo');
-    $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@getTntsearch');
+    $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@searchAdmin');
 
 
     $api->get('get/area/by/polygon','App\Http\Controllers\DataController@getAreaByPolygon');
