@@ -447,10 +447,20 @@ public function DeveloperAutoCompleteX($apikey,Request $request)
 
 public function DeveloperAutoComplete($apikey,Request $request)
 {
-  if ($request->has('q') || $request->q=='is_null'){
+
+  if ($request->has('q') || $request->q==='is_null'){
 
     $key = base64_decode($apikey);
-    $bIdAndKey = explode(':', $key);
+    $key =str_replace('%20', '', $key);
+    if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+      $bIdAndKey = explode(':', $key);
+    }else {
+      return new JsonResponse([
+        'message' => 'Invalid or No Regsitered Key',
+        'status' => '200',
+      ]);
+    }
+
     $bUser=$bIdAndKey[0];
     $bKey=$bIdAndKey[1];
 
@@ -535,11 +545,13 @@ public function DeveloperAutoComplete($apikey,Request $request)
     else{
       return new JsonResponse([
         'message' => 'Invalid or No Regsitered Key',
+        'status' => '200',
       ]);
     }
   }else {
     return new JsonResponse([
-      'message' => 'Empty Request',
+      'message' => 'Empty Request! Please Give Valid Data for searching',
+      'status' => '200',
     ]);
   }
 
@@ -552,7 +564,14 @@ public function DeveloperAutoComplete($apikey,Request $request)
 public function geocode($apikey,$id)
 {
   $key = base64_decode($apikey);
-  $bIdAndKey = explode(':', $key);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
   $bUser=$bIdAndKey[0];
   $bKey=$bIdAndKey[1];
 
@@ -600,7 +619,14 @@ else{
 public function reverseGeocodeNew($apikey,Request $request)
 {
   $key = base64_decode($apikey);
-  $bIdAndKey = explode(':', $key);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
   $bUser=$bIdAndKey[0];
   $bKey=$bIdAndKey[1];
 
@@ -615,8 +641,17 @@ public function reverseGeocodeNew($apikey,Request $request)
     else {
       if ($request->has('longitude') && $request->has('latitude')) {
 
+
         $lat = $request->latitude;
         $lon = $request->longitude;
+
+        if(preg_match("/[a-z]/i", $lat ) || preg_match("/[a-z]/i", $lon )){
+          return response()->json([
+            'message' => 'wrong parameters',
+            'status' => '200',
+          ]);
+        }
+
         $distance = 0.1;
         //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
         $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_within_meters,Address,area,city
@@ -657,7 +692,14 @@ public function reverseGeocodeNew($apikey,Request $request)
 public function reverseNearBy(Request $request, $apikey,$distance=0.5, $limit=15)
 {
   $key = base64_decode($apikey);
-  $bIdAndKey = explode(':', $key);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
   $bUser=$bIdAndKey[0];
   $bKey=$bIdAndKey[1];
   if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
@@ -665,6 +707,12 @@ public function reverseNearBy(Request $request, $apikey,$distance=0.5, $limit=15
 
       $lat = $request->latitude;
       $lon = $request->longitude;
+      if(preg_match("/[a-z]/i", $lat ) || preg_match("/[a-z]/i", $lon )){
+        return response()->json([
+          'message' => 'wrong parameters',
+          'status' => '200',
+        ]);
+      }
       //$distance = 0.5;
       $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,postCode,subType,uCode, ST_AsText(location)
       FROM places
@@ -749,6 +797,33 @@ public function nearbyCatagorized(Request $request, $apikey,$distance=0.5, $limi
       'message' => 'Invalid or No Regsitered Key',
     ]);
   }
+}
+public function getAreaDataPolygonWise(Request $request)
+{
+  if ($request->has('pType')) {
+    $subtype = $request->pType;
+  }else {
+    $subtype = 'Shop';
+  }
+  if ($request->has('area')) {
+    $area = $request->area;
+  }
+  else {
+    $area = 'Baridhara DOHS';
+  }
+  if ($subtype=='all') {
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) LIMIT 10");
+  }
+  else {
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and pType LIKE '%$subtype%' LIMIT 10");
+
+
+  }
+      return response()->json([
+          'Total' => count($places),
+          'places'=> $places
+        ]);
+
 }
 public function rectangularSearch($lon,$lat,$data, $limit=20,$distance = 1.5)
 {

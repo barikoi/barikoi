@@ -1337,6 +1337,7 @@ class PlaceController extends Controller
     }
     public function getPlaceSubType($type)
     {
+      $type =str_replace('%20', ' ', $type);
       $subtype = placeSubType::where('type','=',$type)->orderBy('subtype','asc')->get();
       //    $subtype = $subtype->subtype;
       //      return response()->json($subtype);
@@ -1713,10 +1714,11 @@ class PlaceController extends Controller
                 }
                 public function dropEdit(Request $request,$id)
                 {
-                  if (($request->user()->id)===1) {
+                  if (($request->user()->id)===1 || ($request->user()->id)===12 || ($request->user()->id)===17 ) {
                     $place = Place::findOrFail($id);
                     $place->longitude = $request->longitude;
                     $place->latitude = $request->latitude;
+                    $place->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
                     $place->save();
                     return response()->json(['Message '=>' Updated']);
                   }else {
@@ -1788,8 +1790,34 @@ class PlaceController extends Controller
                     Point(($lon-($distance/111)), ($lat-($distance/111)))
                   ), location )
                   ORDER BY distance_in_meters LIMIT 1");
+                  if (count($result)>0) {
+                    return response()->json($result);
+                  }else {
+                    $client = new \GuzzleHttp\Client();
+                    $res = $client->request('GET', 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='.$request->latitude.'&lon='.$request->longitude.'');
+                    //preg_match_all('!\d+!', $str->Address, $matches);
+                    $res = $res->getBody();
+                    $data = json_decode( $res, true );
+                    $Address = $data['display_name'];
+                    return new JsonResponse([
+                       ['Address' => $Address,
+                       'uCode' => 'Not Available',
+                       'subType' => 'Not Available',
+                       'pType' => 'Not Available',
+                       'longitude'=> $data['lon'],
+                       'latitude' => $data['lat'],
+                       'city' =>'N/A',
+                       'area' => 'N/A',
+                       'id' =>$data['place_id'],
+                       'distance_in_meters' => 'N/A',
+                       'contact_person_name' => 'N/A',
+                       'ST_AsText(location)' => 'N/A',
 
-              return response()->json($result);
+                       //'Data Source' => 'OpenstreetMap'
+                     ],
+                    ]);
+                  }
+
             }
 
             public function reverseGeocodeDash($longitude,$latitude)
@@ -1907,7 +1935,7 @@ class PlaceController extends Controller
 
             public function getRoadWise(Request $request)
             {
-              $Place = DB::table('placesf')->where('area','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','uCode','area','city','postCode']);
+              $Place = DB::table('placesf')->where('area','LIKE','%'.$request->data.'%')->get(['id','Address','longitude','latitude','pType','subType','uCode','area','city','postCode','user_id']);
               $count = count($Place);
               return response()->json(['Total' => $count,'Places' => $Place]);
             }

@@ -19,7 +19,7 @@ class TradeLicenseController extends Controller{
     public function getAllTradeLicenseInfo()
     {
       $place = DB::table('places')->join('tradelicense','places.id','=','tradelicense.pid')
-      ->select('places.id as id','places.longitude','places.latitude','places.Address','places.zone','places.ward','places.uCode','places.pType','places.subType','tradelicense.id as tradeid','tradelicense.*')
+      ->select('places.id as id','places.longitude','places.latitude','places.Address','places.uCode','places.pType','places.subType','tradelicense.id as tradeid','tradelicense.*')
       ->get();
       return response()->json(['Data' => $place]);
     }
@@ -33,7 +33,7 @@ class TradeLicenseController extends Controller{
     public function GetPlaceWithTradeLicense($id)
     {
       $place = DB::table('places')->join('tradelicense','places.id','=','tradelicense.pid')
-      ->select('places.id as id','places.longitude','places.latitude','places.Address','places.zone','places.ward','places.uCode','places.pType','places.subType','places.area','places.city','tradelicense.*')->where('places.uCode','=',$id)->orWhere('places.id','=',$id)
+      ->select('places.id as id','places.longitude','places.latitude','places.Address','places.uCode','places.pType','places.subType','places.area','places.city','tradelicense.*')->where('places.uCode','=',$id)->orWhere('places.id','=',$id)
       ->get();
       return response()->json(['Data' => $place]);
     }

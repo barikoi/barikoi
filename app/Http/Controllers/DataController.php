@@ -161,7 +161,24 @@ class DataController extends Controller {
             ]);
 
       }
-
+      public function getWardFromMap()
+      {
+        $client = new \GuzzleHttp\Client();
+        $res = $client->request('GET', 'https://map.barikoi.xyz:8070/api/show/ward');
+        //preg_match_all('!\d+!', $str->Address, $matches);
+        $res = $res->getBody();
+        $data = json_decode( $res, true );
+        return $data;
+      }
+      public function getZoneFromMap()
+      {
+        $client = new \GuzzleHttp\Client();
+        $res = $client->request('GET', 'https://map.barikoi.xyz:8070/api/zone');
+        //preg_match_all('!\d+!', $str->Address, $matches);
+        $res = $res->getBody();
+        $data = json_decode( $res, true );
+        return $data;
+      }
 
       /*
       Transfer data to new column

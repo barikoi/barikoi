@@ -82,7 +82,7 @@ class AuthController extends Controller
       //end of Ref_code gen.
 
       $user = new User;
-      $user->name = $request->name;
+      $user->name = rtrim($request->name," ");
       $user->email = $request->email;
       $user->password = app('hash')->make($request->password);
       $user->userType=$request->userType;

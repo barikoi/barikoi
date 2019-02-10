@@ -31,6 +31,7 @@ use GuzzleHttp\Client;
 use TeamTNT\TNTSearch\TNTSearch;
 use TeamTNT\TNTSearch\Indexer\TNTIndexer;
 use Redirect;
+use App\Token;
 
 
 //use Maatwebsite\Excel\Facades\Excel;
@@ -565,14 +566,91 @@ function SearchString($text, $pattern, $k)
     	return $result;
 }
 
-  public function osm()
-  {
-    $str = DB::table('places_3')->limit(20)->get(['Address']);
+public function osm($apikey,$start,$destination)
+{
+  $key = base64_decode($apikey);
+  $bIdAndKey = explode(':', $key);
+  $bUser=$bIdAndKey[0];
+  $bKey=$bIdAndKey[1];
+  if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+  //$str = DB::table('places_3')->limit(20)->get(['Address']);
+  $client = new \GuzzleHttp\Client();
+  $res = $client->request('GET', 'http://map.barikoi.xyz:5000/route/v1/car/'.$start.';'.$destination.'');
+  //preg_match_all('!\d+!', $str->Address, $matches);
+  $res = $res->getBody();
+  $data = json_decode( $res, true );
+  $data =$data['routes'];
+  $data = $data[0]['distance'];
+  $data = $data/1000;
+  return response()->json(['Distance'=> $data.' KM']);
+  //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+ }
+ else{
+   return new JsonResponse([
+     'message' => 'Invalid or No Regsitered Key',
+   ]);
+ }
+}
 
-    //preg_match_all('!\d+!', $str->Address, $matches);
-    return response()->json($str);
-    //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+public function osmReverse(Request $request){
+
+  $client = new \GuzzleHttp\Client();
+  $res = $client->request('GET', 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=23.79362719&lon=90.41092549');
+  //preg_match_all('!\d+!', $str->Address, $matches);
+  $res = $res->getBody();
+  $data = json_decode( $res, true );
+  $name =$data['display_name'];
+  $address = $data['address']['postcode'];
+  return new JsonResponse([
+     ['Address' => $name,
+     'uCode' => 'Not Available',
+     'subType' => 'Not Available',
+     'pType' => 'Not Available',
+     'Data Source' => 'OpenstreetMap',
+     'postCode' => $data['address']['postcode'],
+     'city' => $data['address']['city'],
+     'area' => $data['address']['suburb']
+   ],
+  ]);
+
+}
+public function osmSearch(Request $request)
+{
+  $client = new \GuzzleHttp\Client();
+  $res = $client->request('GET', 'photon.komoot.de/api/?q='.$request->q.'');
+  //preg_match_all('!\d+!', $str->Address, $matches);
+  $res = $res->getBody();
+  $data = json_decode( $res, true );
+  $name =$data['features'];
+  $longitude = $name[0]['geometry']['coordinates'][0];
+  $latitude = $name[0]['geometry']['coordinates'][1];
+  $Address = $name[0]['properties']['name'];
+  return new JsonResponse([
+     'places' => ['Address' => $Address,
+     'postCode' => $name[0]['properties']['postcode'],
+     'city' => $name[0]['properties']['city'],
+     'longitude' => $longitude,
+     'latitude' => $latitude,
+     'uCode' => 'Not Available',
+     'subType' => 'Not Available',
+     'pType' => 'Not Available',
+     'Data Source' => 'OpenstreetMap',
+
+     //'area' => $data['address']['suburb']
+   ],
+  ]);
+}
+public function is_base64($apikey)
+{
+  $key = base64_decode($apikey);
+  if (strpos($key, ':') !== false) {
+    return 'true';
   }
+  //$bIdAndKey = explode(':', $key);
+  //$bUser=$bIdAndKey[0];
+  //$bKey=$bIdAndKey[1];
+  //return $key;
+}
 
 
 

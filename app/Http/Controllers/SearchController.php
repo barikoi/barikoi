@@ -30,7 +30,7 @@ use Carbon\Carbon;
 use TeamTNT\TNTSearch\TNTSearch;
 use TeamTNT\TNTSearch\Classifier\TNTClassifier;
 use TeamTNT\TNTSearch\TNTGeoSearch;
-
+// SEARCH MAIN
 class SearchController extends Controller
 {
     /**
@@ -559,7 +559,7 @@ class SearchController extends Controller
     //$stopTimer = microtime(true);
 
 
-      return response()->json(['places'=>$place],200); //round($stopTimer - $startTimer, 7) *1000 ." ms" ]);
+    return response()->json(['places'=>$place],200); //round($stopTimer - $startTimer, 7) *1000 ." ms" ]);
 
 
   }
@@ -693,7 +693,7 @@ class SearchController extends Controller
 
 
     $q = $request->search;
-    if (strpos($q, ' rd') !== false || strpos($q, ' rd ') !== false || strpos($q, 'rd ') !== false || strpos($q, 'h ') !== false || strpos($q, ' h ') !== false || strpos($q, ' h') !== false) {
+    /*if (strpos($q, ' rd') !== false || strpos($q, ' rd ') !== false || strpos($q, 'rd ') !== false || strpos($q, 'h ') !== false || strpos($q, ' h ') !== false || strpos($q, ' h') !== false) {
       $q = str_replace(' rd', ' road',$q);
       $q = str_replace(' rd ', ' road',$q);
       $q = str_replace('rd ', ' road ',$q);
@@ -702,6 +702,7 @@ class SearchController extends Controller
      // $q = str_replace(' h', 'house ',$q);
     }
     $q= ltrim($q,' ');
+    */
     //$q = preg_replace("/[\/,]/", " ", $q);
     $res = $tnt->searchBoolean($q,20);
     if (count($res['ids'])>0) {
@@ -769,12 +770,13 @@ public function testSearchthree(Request $request)
 
     if ($request->has('search')) {
       $q = $request->search;
-
+    //  $q= str_replace('#', ' ',$q);
+      //$q= str_replace('  ', ' ',$q);
        $place = $this->linearsearch($q);
        if (count($place)>0) {
-         return response()->json(['places'=>$place ]);
+         return response()->json(['q'=> $q,'places'=>$place ]);
        }else {
-         $q = preg_replace("/[-]/", " ", $q);
+         $q = preg_replace("/[-]/", " ",$q);
          $q = preg_replace('/\s+/', ' ',$q);
          $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
          $x = explode(" ",$str);
@@ -829,7 +831,7 @@ public function testSearchthree(Request $request)
 
 
 
-   }
+  }
 
   public function searchAdmin(Request $request)
       {
@@ -853,26 +855,25 @@ public function testSearchthree(Request $request)
 
        if ($request->has('search')) {
          $q = $request->search;
-
-         $place = Place::
-         where('flag',1)
-         ->where('Address','Like',$q.'%')
-         ->limit(10)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
-
-          if (count($place)>0) {
-            return response()->json(['places'=>$place ]);
+         $q= str_replace('#', ' ',$q);
+         $q= str_replace('  ', ' ',$q);
+         $place = Place::where('Address','Like',$q.'%')->limit(10)
+         ->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
+         if (count($place)>0) {
+            return response()->json(['q'=>$q,'places'=>$place ]);
           }else {
             $q = preg_replace("/[-]/", " ", $q);
             $q = preg_replace('/\s+/', ' ',$q);
-            $str = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+            $q = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+
+            $str=$q;
             $x = explode(" ",$str);
             $size = sizeof($x);
-            $place = Place::where('flag',1)
-            ->where('Address','Like',$q.'%')
+            $place = Place::where('Address','Like',$q.'%')
             ->limit(10)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
 
             if (count($place)>0) {
-              return response()->json(['places'=>$place ]);
+              return response()->json(['q'=>$q,'places'=>$place  ]);
             }else {
               $place = DB::table('places')->where('uCode','=',$q)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
 
@@ -883,26 +884,51 @@ public function testSearchthree(Request $request)
                 $q = preg_replace("/[\/,-]/", " ", $q);
                 $res = $tnt->searchBoolean($q,10);
                 if (count($res['ids'])>0) {
-                  $place = DB::table('places')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
+                  $place = DB::table('places')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
                   return response()->json(['places' => $place]);
                 }else{
                   $x = explode(" ",$q);
                   $size = sizeof($x);
                   if (count($size)>1) {
-                    $y=''.$x[1].' '.$x[sizeof($x)-1].'';
+                    $y=''.$x[0].' '.$x[sizeof($x)-1].'';
                     $res = $tnt->searchBoolean($y,10);
                   }else {
                     $res = $tnt->searchBoolean($q,20);
                   }
                   if (count($res['ids'])>0) {
-                     $place = DB::table('places')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
+                     $place = DB::table('places')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
                      return response()->json(['y'=> $y,'places' => $place]);
                    }else {
-                     DB::table('Searchlytics')->insert(['query' => $q]);
+                     $client = new \GuzzleHttp\Client();
+                     $res = $client->request('GET', 'photon.komoot.de/api/?q='.$q.'');
+                     //preg_match_all('!\d+!', $str->Address, $matches);
+                     $res = $res->getBody();
+                     $data = json_decode( $res, true );
+                     $name =$data['features'];
+                     $longitude = $name[0]['geometry']['coordinates'][0];
+                     $latitude = $name[0]['geometry']['coordinates'][1];
+                     $Address = $name[0]['properties']['name'];
+
+
+                     return new JsonResponse([
+                         'places' => array([
+                          'Address' => $Address,
+                          'postCode' => $name[0]['properties']['postcode'],
+                          'city' => $name[0]['properties']['city'],
+                          'longitude' => $longitude,
+                          'latitude' => $latitude,
+                          'uCode' => 'Not Available',
+                          'subType' => 'Not Available',
+                          'pType' => 'Not Available',
+                          'Data Source' => 'OpenstreetMap',
+                        ])
+                     ]);
+                    /* DB::table('Searchlytics')->insert(['query' => $q]);
                      return response()->json([
                        'message' => 'not found',
                        'status' => '200',
-                     ]);
+                       'q' => $q,
+                     ]);*/
                    }
 
                 }
