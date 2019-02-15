@@ -74,6 +74,7 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
             'Psy\\' => 4,
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
+            'Predis\\' => 7,
             'PhpParser\\' => 10,
         ),
         'M' => 
@@ -95,6 +96,7 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
             'Illuminate\\Support\\' => 19,
             'Illuminate\\Session\\' => 19,
             'Illuminate\\Routing\\' => 19,
+            'Illuminate\\Redis\\' => 17,
             'Illuminate\\Queue\\' => 17,
             'Illuminate\\Pipeline\\' => 20,
             'Illuminate\\Pagination\\' => 22,
@@ -269,6 +271,10 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
+        'Predis\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/predis/predis/src',
+        ),
         'PhpParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
@@ -316,6 +322,10 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
         'Illuminate\\Routing\\' => 
         array (
             0 => __DIR__ . '/..' . '/illuminate/routing',
+        ),
+        'Illuminate\\Redis\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/illuminate/redis',
         ),
         'Illuminate\\Queue\\' => 
         array (
@@ -568,6 +578,7 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
         'CreateDeliveryKoisTable' => __DIR__ . '/../..' . '/database/migrations/2017_10_17_194544_create_delivery_kois_table.php',
         'CreateDeliveryManTable' => __DIR__ . '/../..' . '/database/migrations/2017_11_27_101621_create_delivery_man_table.php',
         'CreateFavoritePlacesTable' => __DIR__ . '/../..' . '/database/migrations/2017_04_15_183802_create_favorite_places_table.php',
+        'CreateGpxTable' => __DIR__ . '/../..' . '/database/migrations/2018_08_13_191139_create_gpx_table.php',
         'CreateImagesTable' => __DIR__ . '/../..' . '/database/migrations/2017_06_18_142126_create_images_table.php',
         'CreateOfferRidesTable' => __DIR__ . '/../..' . '/database/migrations/tmp/2017_08_26_182819_create_offer_rides_table.php',
         'CreateOffersTable' => __DIR__ . '/../..' . '/database/migrations/2017_05_10_173440_create_offers_table.php',
@@ -598,7 +609,6 @@ class ComposerStaticInitac93fcbd0ffe610ab42447a43028f7fb
         'File_Iterator' => __DIR__ . '/..' . '/phpunit/php-file-iterator/src/Iterator.php',
         'File_Iterator_Facade' => __DIR__ . '/..' . '/phpunit/php-file-iterator/src/Facade.php',
         'File_Iterator_Factory' => __DIR__ . '/..' . '/phpunit/php-file-iterator/src/Factory.php',
-        'Gpx' => __DIR__ . '/../..' . '/database/migrations/2018_08_13_184507_gpx.php',
         'Maatwebsite\\Excel\\Classes\\Cache' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/Cache.php',
         'Maatwebsite\\Excel\\Classes\\FormatIdentifier' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/FormatIdentifier.php',
         'Maatwebsite\\Excel\\Classes\\LaravelExcelWorksheet' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/LaravelExcelWorksheet.php',

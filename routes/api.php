@@ -82,11 +82,13 @@ $api->version('v1',  function ($api) {
   $api->get('/range/download','App\Http\Controllers\PlaceController@exportDataIdWise');
   $api->post('insert/area','App\Http\Controllers\DataController@InsertArea');
   $api->get('find/point/area/{longitude}/{latitude}','App\Http\Controllers\DataController@FindPointInsidePolygon');
+  $api->get('find/point/road/{longitude}/{latitude}','App\Http\Controllers\DataController@FindNearstRoad');
   $api->patch('update/area/{id}','App\Http\Controllers\DataController@updateArea');
   $api->get('aci','App\Http\Controllers\testController@aci');
   $api->get('fuzzysearch/','App\Http\Controllers\SearchController@TestFuzzySearch');
   $api->get('fix/data/inside/polygon','App\Http\Controllers\DataController@FixDataInsidePolygon');
   $api->get('get/distance/{start}/{destination}','App\Http\Controllers\testController@osm');
+  $api->get('get/osm/map','App\Http\Controllers\testController@osmMap');
   $api->get('get/osm/reverse','App\Http\Controllers\testController@osmReverse');
   $api->get('get/osm/search','App\Http\Controllers\testController@osmSearch');
   $api->get('base/{key}','App\Http\Controllers\testController@is_base64');
@@ -94,7 +96,7 @@ $api->version('v1',  function ($api) {
   $api->get('zone/from/map','App\Http\Controllers\DataController@getZoneFromMap');
   //$api->get('index/','App\Http\Controllers\PlaceController@updateTntIndex');
   $api->group([
-      'middleware' => 'api.throttle', 'limit' => 60, 'expires' => 1
+      'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 1
   ], function ($api) {
   $api->post('test/search','App\Http\Controllers\SearchController@testSearch');
 
@@ -111,10 +113,12 @@ $api->version('v1',  function ($api) {
   //$api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
 
-  $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGeocode');
+
+  $api->get('get/url/search','App\Http\Controllers\testController@getUrl');
 
 
 });
+$api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGeocode');
 
   //end, test routes//
   //barikoi pool-bot
@@ -330,7 +334,7 @@ $api->version('v1',  function ($api) {
    $api->get('/places/contributors/{id}','App\Http\Controllers\UserProfileController@ContributorAddedPlacesX'); // Get Places but Contributors
    $api->get('/bikerental/docs','App\Http\Controllers\testController@rentalDocs');
    // without throttle
-   $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearchthree');
+
 
 ///================================Auth api starts ===========================================================================
     $api->get('get/custom/polygon','App\Http\Controllers\DataController@SearchInPolygon');
@@ -339,6 +343,7 @@ $api->version('v1',  function ($api) {
 
       $api->get('geo','App\Http\Controllers\testController@NewPlace');
       $api->get('poly','App\Http\Controllers\testController@TestPolygon');
+      $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearchthree');
 
 
       $api->get('get/area','App\Http\Controllers\DataController@getArea');

@@ -147,6 +147,7 @@ $app->make(Dingo\Api\Auth\Auth::class)->extend('jwt', function ($app) {
 $app->register(Flipbox\LumenGenerator\LumenGeneratorServiceProvider::class);
 $app->register( \jmrieger\OneSignal\OneSignalServiceProvider::class );
 class_alias( 'jmrieger\OneSignal\OneSignalFacade', 'OneSignal' );
+$app->register(Illuminate\Redis\RedisServiceProvider::class);
 
 /*
 |--------------------------------------------------------------------------

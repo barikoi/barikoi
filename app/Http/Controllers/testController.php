@@ -592,6 +592,32 @@ public function osm($apikey,$start,$destination)
  }
 }
 
+public function osmMap()
+{
+  /*$key = base64_decode($apikey);
+  $bIdAndKey = explode(':', $key);
+  $bUser=$bIdAndKey[0];
+  $bKey=$bIdAndKey[1];
+  if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {*/
+  //$str = DB::table('places_3')->limit(20)->get(['Address']);
+  //$client = new \GuzzleHttp\Client();
+  //$res = $client->request('GET', 'http://map.barikoi.xyz:8080/styles/klokantech-basic/{z}/{x}/{y}.png');
+  //preg_match_all('!\d+!', $str->Address, $matches);
+  $res = 'http://map.barikoi.xyz:8080/styles/klokantech-basic/{z}/{x}/{y}.png';//$res->getBody();
+  /*$data = json_decode( $res, true );
+  $data =$data['routes'];
+  $data = $data[0]['distance'];
+  $data = $data/1000;*/
+  return response()->json($res);
+  //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+ //}
+ /*else{
+   return new JsonResponse([
+     'message' => 'Invalid or No Regsitered Key',
+   ]);
+ }*/
+}
+
 public function osmReverse(Request $request){
 
   $client = new \GuzzleHttp\Client();
@@ -650,6 +676,10 @@ public function is_base64($apikey)
   //$bUser=$bIdAndKey[0];
   //$bKey=$bIdAndKey[1];
   //return $key;
+}
+public function getUrl()
+{
+  return 'https://api.barikoi.xyz/v1/tnt/search/test';
 }
 
 

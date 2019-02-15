@@ -73,7 +73,7 @@ class DataController extends Controller {
 
 
     //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,astext(location) FROM placesf WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -128,6 +128,18 @@ class DataController extends Controller {
           $area = DB::select("SELECT name FROM Area WHERE ST_Contains(Area.area, GEOMFROMTEXT('POINT($lon $lat)'))");
 
           return response()->json($area);
+
+
+      }
+      public function FindNearstRoad($lon,$lat)
+      {
+        //$x =POINT($lon $lat)<10/11114;
+        //select * from roads where ST_Distance(road_geometry,POINT(90.386085,23.820411))<10/11114
+        //opcache_invalidate();
+        opcache_reset ();
+          $road = DB::select("SELECT road_name_number from roads where ST_Distance(road_geometry,POINT($lon,$lat))<1/11114");
+
+          return response()->json($road);
 
 
       }

@@ -30,6 +30,8 @@ use Carbon\Carbon;
 use TeamTNT\TNTSearch\TNTSearch;
 use TeamTNT\TNTSearch\Classifier\TNTClassifier;
 use TeamTNT\TNTSearch\TNTGeoSearch;
+use Illuminate\Support\Facades\Redis;
+
 // SEARCH MAIN
 class SearchController extends Controller
 {
@@ -689,7 +691,7 @@ class SearchController extends Controller
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
-    $tnt->asYouType = true;
+    $tnt->asYouType = false;
 
 
     $q = $request->search;
@@ -704,9 +706,9 @@ class SearchController extends Controller
     $q= ltrim($q,' ');
     */
     //$q = preg_replace("/[\/,]/", " ", $q);
-    $res = $tnt->searchBoolean($q,20);
+    $res = $tnt->searchBoolean($q,10);
     if (count($res['ids'])>0) {
-      $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get();
+      $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
       return response()->json(['String' => $q,'places' => $place]);
     }
     else {
@@ -770,10 +772,20 @@ public function testSearchthree(Request $request)
 
     if ($request->has('search')) {
       $q = $request->search;
+      if ($place = Redis::get($q)) {
+        $place = json_decode($place);
+        return response()->Json([
+          'q'=> $q,
+          'places' => $place
+
+
+        ]);
+      }
     //  $q= str_replace('#', ' ',$q);
       //$q= str_replace('  ', ' ',$q);
        $place = $this->linearsearch($q);
        if (count($place)>0) {
+         Redis::set($q, $place);
          return response()->json(['q'=> $q,'places'=>$place ]);
        }else {
          $q = preg_replace("/[-]/", " ",$q);
@@ -783,11 +795,13 @@ public function testSearchthree(Request $request)
          $size = sizeof($x);
          $place = $this->linearsearch($str);
 
+
          if (count($place)>0) {
            return response()->json(['places'=>$place ]);
          }else {
            $place = $this->uCodeSearch($q);
            if (count($place)>0) {
+             Redis::set($q, $place);
              return response()->json(['places'=>$place ]);
            }
            else {
@@ -803,7 +817,7 @@ public function testSearchthree(Request $request)
                  $y=''.$x[1].' '.$x[sizeof($x)-1].'';
                  $res = $tnt->searchBoolean($y,10);
                }else {
-                 $res = $tnt->searchBoolean($q,20);
+                 $res = $tnt->searchBoolean($q,10);
                }
                if (count($res['ids'])>0) {
                   $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
@@ -828,8 +842,6 @@ public function testSearchthree(Request $request)
          'message' => 'empty request',
        ]);
      }
-
-
 
   }
 
@@ -857,7 +869,7 @@ public function testSearchthree(Request $request)
          $q = $request->search;
          $q= str_replace('#', ' ',$q);
          $q= str_replace('  ', ' ',$q);
-         $place = Place::where('Address','Like',$q.'%')->limit(10)
+         $place = DB::table('places')->where('Address','Like',$q.'%')->limit(10)
          ->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
          if (count($place)>0) {
             return response()->json(['q'=>$q,'places'=>$place ]);
@@ -869,7 +881,7 @@ public function testSearchthree(Request $request)
             $str=$q;
             $x = explode(" ",$str);
             $size = sizeof($x);
-            $place = Place::where('Address','Like',$q.'%')
+            $place = DB::table('places')->where('Address','Like',$q.'%')
             ->limit(10)->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
 
             if (count($place)>0) {

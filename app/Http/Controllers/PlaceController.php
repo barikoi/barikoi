@@ -1714,12 +1714,17 @@ class PlaceController extends Controller
                 }
                 public function dropEdit(Request $request,$id)
                 {
-                  if (($request->user()->id)===1 || ($request->user()->id)===12 || ($request->user()->id)===17 ) {
+                  if (($request->user()->id)===1 || ($request->user()->id)===12 || ($request->user()->id)===17 || ($request->user()->id)===320 ) {
                     $place = Place::findOrFail($id);
                     $place->longitude = $request->longitude;
                     $place->latitude = $request->latitude;
                     $place->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
                     $place->save();
+
+                    $placef = DB::table('placesf')->where('id',$id)->first();
+                    $placef->longitude = $request->longitude;
+                    $placef->latitude = $request->latitude;
+                    $placef->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
                     return response()->json(['Message '=>' Updated']);
                   }else {
                     return response()->json(['Message '=>' Not Permitted']);
@@ -1793,30 +1798,50 @@ class PlaceController extends Controller
                   if (count($result)>0) {
                     return response()->json($result);
                   }else {
-                    $client = new \GuzzleHttp\Client();
-                    $res = $client->request('GET', 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='.$request->latitude.'&lon='.$request->longitude.'');
-                    //preg_match_all('!\d+!', $str->Address, $matches);
-                    $res = $res->getBody();
-                    $data = json_decode( $res, true );
-                    $Address = $data['display_name'];
-                    return new JsonResponse([
-                       ['Address' => $Address,
-                       'uCode' => 'Not Available',
-                       'subType' => 'Not Available',
-                       'pType' => 'Not Available',
-                       'longitude'=> $data['lon'],
-                       'latitude' => $data['lat'],
-                       'city' =>'N/A',
-                       'area' => 'N/A',
-                       'id' =>$data['place_id'],
-                       'distance_in_meters' => 'N/A',
-                       'contact_person_name' => 'N/A',
-                       'ST_AsText(location)' => 'N/A',
+                    $road = DB::select("SELECT road_name_number from roads where ST_Distance(road_geometry,POINT($lon,$lat))<20/11114");
+                    if (count($road)>0) {
+                      return new JsonResponse([
+                         ['Address' => $road[0]->road_name_number,
+                         'uCode' => 'Not Available',
+                         'subType' => 'Not Available',
+                         'pType' => 'Not Available',
+                         'longitude'=> $lon,
+                         'latitude' => $lat,
+                         'city' =>'N/A',
+                         'area' => 'N/A',
+                         'id' =>'N/A',
+                         'distance_in_meters' => 0,
+                         'contact_person_name' => 'N/A',
+                         'ST_AsText(location)' => 'N/A',
+                         'Data Source' => 'OpenstreetMap'
+                       ],
+                      ]);
+                    }else {
+                      $client = new \GuzzleHttp\Client();
+                        $res = $client->request('GET', 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='.$request->latitude.'&lon='.$request->longitude.'&accept-language=en');
+                        //preg_match_all('!\d+!', $str->Address, $matches);
+                        $res = $res->getBody();
+                        $data = json_decode( $res, true );
+                        $Address = $data['display_name'];
+                        return new JsonResponse([
+                           ['Address' => $Address,
+                           'uCode' => 'Not Available',
+                           'subType' => 'Not Available',
+                           'pType' => 'Not Available',
+                           'longitude'=> $lon,
+                           'latitude' => $lat,
+                           'city' =>'N/A',
+                           'area' => 'N/A',
+                           'id' =>'N/A',
+                           'distance_in_meters' => 0,
+                           'contact_person_name' => 'N/A',
+                           'ST_AsText(location)' => 'N/A',
+                           'Data Source' => 'OpenstreetMap'
+                         ],
+                        ]);
+                      }
+                    }
 
-                       //'Data Source' => 'OpenstreetMap'
-                     ],
-                    ]);
-                  }
 
             }
 

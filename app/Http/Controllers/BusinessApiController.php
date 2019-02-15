@@ -748,7 +748,14 @@ public function reverseNearBy(Request $request, $apikey,$distance=0.5, $limit=15
 public function nearbyCatagorized(Request $request, $apikey,$distance=0.5, $limit=15)
 {
   $key = base64_decode($apikey);
-  $bIdAndKey = explode(':', $key);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
   $bUser=$bIdAndKey[0];
   $bKey=$bIdAndKey[1];
   if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
@@ -761,36 +768,69 @@ public function nearbyCatagorized(Request $request, $apikey,$distance=0.5, $limi
         $result = $this->rectangularSearch($lon,$lat,$ptype,$limit,$distance);/*DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
         FROM places
         WHERE ST_Contains( ST_MakeEnvelope(
-          Point(($lon+($distance/111)), ($lat+($distance/111))),
-          Point(($lon-($distance/111)), ($lat-($distance/111)))
-        ), location ) AND ( pType LIKE '%$request->ptype%')
-        ORDER BY distance_in_meters
-        LIMIT $limit");*/
-      }else {
-        $result = $this->rectangularSearch($lon,$lat,$ptype,$limit,$distance);/*DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
-        FROM places
-        WHERE ST_Contains( ST_MakeEnvelope(
-          Point(($lon+($distance/111)), ($lat+($distance/111))),
-          Point(($lon-($distance/111)), ($lat-($distance/111)))
-        ), location ) AND (subType LIKE '%$request->ptype%')
-        ORDER BY distance_in_meters
-        LIMIT $limit");*/
-      }
-      if (count($result)>0) {
-        return response()->json(['Place' => $result]);
-      }else {
-        return response()->json([
-          'message' => 'not found',
-          'status' => '200',
-        ]);
-      }
-    }
-    else {
-      return new JsonResponse([
-        'message' => 'parameters missing',
-      ]);
-    }
+        Point(($lon+($distance/111)), ($lat+($distance/111))),
+        Point(($lon-($distance/111)), ($lat-($distance/111)))
+      ), location ) AND ( pType LIKE '%$request->ptype%')
+      ORDER BY distance_in_meters
+      LIMIT $limit");*/
+    }else {
+      $result = $this->rectangularSearch($lon,$lat,$ptype,$limit,$distance);/*DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location)
+      FROM places
+      WHERE ST_Contains( ST_MakeEnvelope(
+      Point(($lon+($distance/111)), ($lat+($distance/111))),
+      Point(($lon-($distance/111)), ($lat-($distance/111)))
+    ), location ) AND (subType LIKE '%$request->ptype%')
+    ORDER BY distance_in_meters
+    LIMIT $limit");*/
+  }
+  if (count($result)>0) {
+    return response()->json(['Place' => $result]);
+  }else {
+    return response()->json([
+      'message' => 'not found',
+      'status' => '200',
+    ]);
+  }
+}
+else {
+  return new JsonResponse([
+    'message' => 'parameters missing',
+  ]);
+}
 
+}
+else{
+  return new JsonResponse([
+    'message' => 'Invalid or No Regsitered Key',
+  ]);
+}
+}
+
+public function Distance($apikey,$start,$destination)
+{
+  $key = base64_decode($apikey);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
+  $bUser=$bIdAndKey[0];
+  $bKey=$bIdAndKey[1];
+  if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+    //$str = DB::table('places_3')->limit(20)->get(['Address']);
+    $client = new \GuzzleHttp\Client();
+    $res = $client->request('GET', 'http://map.barikoi.xyz:5000/route/v1/car/'.$start.';'.$destination.'');
+    //preg_match_all('!\d+!', $str->Address, $matches);
+    $res = $res->getBody();
+    $data = json_decode( $res, true );
+    $data =$data['routes'];
+    $data = $data[0]['distance'];
+    $data = $data/1000;
+    return response()->json(['Distance'=> $data.' KM']);
+    //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
   }
   else{
     return new JsonResponse([
@@ -819,10 +859,10 @@ public function getAreaDataPolygonWise(Request $request)
 
 
   }
-      return response()->json([
-          'Total' => count($places),
-          'places'=> $places
-        ]);
+  return response()->json([
+    'Total' => count($places),
+    'places'=> $places
+  ]);
 
 }
 public function rectangularSearch($lon,$lat,$data, $limit=20,$distance = 1.5)
@@ -840,19 +880,19 @@ public function rectangularSearch($lon,$lat,$data, $limit=20,$distance = 1.5)
 }
 
 
-  //Show API ANALYTICS ----------------------********----------------------
+//Show API ANALYTICS ----------------------********----------------------
 
-  public function totalApiUser()
-  {
-    //$api = Token::where('isActive',1)->count();
-    $api_usage = Token::sum('reverse_geo_code_count');
+public function totalApiUser()
+{
+  //$api = Token::where('isActive',1)->count();
+  $api_usage = Token::sum('reverse_geo_code_count');
 
-    return response()->json(['Api_usage' => $api_usage]);
-  }
+  return response()->json(['Api_usage' => $api_usage]);
+}
 
 
 
-  //END API ANALYTICS
+//END API ANALYTICS
 
 
 }

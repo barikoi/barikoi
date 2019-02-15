@@ -20,6 +20,8 @@ class Token extends Model
       'autocomplete_count',
       'geo_code_count',
       'reverse_geo_code_count',
+      'nearby_count',
+      'distance_count'
     ];
 
     public function user()
