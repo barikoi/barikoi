@@ -7,6 +7,7 @@ use TeamTNT\TNTSearch\TNTSearch;
 use TeamTNT\TNTSearch\Indexer\TNTGeoIndexer;
 use App\Place;
 use Exception;
+
 class IndexAddressCommand extends Command
 {
     /**

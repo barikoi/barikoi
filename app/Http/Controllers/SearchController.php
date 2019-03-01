@@ -171,8 +171,8 @@ class SearchController extends Controller
               $ad=$post->Address;
               $sub=$post->area.','.$post->city;
               $code=$post->uCode;
-              $weblink="https://barikoi.com/#/code/".$code;
-
+              $weblink="https://barikoi.com/#/map/".$code;
+              // http://barikoi.com/#/map/MXVZ6205
               //echo count($post->images);
 
               if(count($post->images)==0){
@@ -705,14 +705,25 @@ class SearchController extends Controller
     }
     $q= ltrim($q,' ');
     */
-    //$q = preg_replace("/[\/,]/", " ", $q);
-    $res = $tnt->searchBoolean($q,10);
+
+    $res = $tnt->searchBoolean($q,20);
+    $keys = collect($res['ids'])->values()->all();
     if (count($res['ids'])>0) {
-      $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+      $place = DB::table('places_3')->whereIn('id', $keys)/*orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))*/->get(['id','Address','new_address','area','city','postCode','uCode','longitude','latitude','pType','subType']);
       return response()->json(['String' => $q,'places' => $place]);
     }
     else {
-      return response()->json(['String' => $q,'places'=>'Not found']);
+        $q = preg_replace("/[\/,]/", " ", $q);
+        $res = $tnt->search($q,20);
+        $keys = collect($res['ids'])->values()->all();
+        if (count($res['ids'])>0) {
+          $place = DB::table('places_3')->whereIn('id', $keys)->/*orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->*/get(['id','Address','new_address','area','city','postCode','uCode','longitude','latitude','pType','subType']);
+          return response()->json(['String' => $q,'places' => $place]);
+        }
+        else {
+          return response()->json(['String two' => $q,'places'=>'Not found']);
+        }
+
     }
    }
 
@@ -768,24 +779,24 @@ public function testSearchthree(Request $request)
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
-    $tnt->asYouType = true;
+    //$tnt->asYouType = true;
 
     if ($request->has('search')) {
-      $q = $request->search;
+      $q = strtolower($request->search);
+
       if ($place = Redis::get($q)) {
         $place = json_decode($place);
         return response()->Json([
           'q'=> $q,
-          'places' => $place
-
-
+          'places' => $place,
+          'source' => 'Cache'
         ]);
       }
     //  $q= str_replace('#', ' ',$q);
       //$q= str_replace('  ', ' ',$q);
        $place = $this->linearsearch($q);
        if (count($place)>0) {
-         Redis::set($q, $place);
+          Redis::setex($q, 60*60*24,$place);
          return response()->json(['q'=> $q,'places'=>$place ]);
        }else {
          $q = preg_replace("/[-]/", " ",$q);
@@ -795,8 +806,8 @@ public function testSearchthree(Request $request)
          $size = sizeof($x);
          $place = $this->linearsearch($str);
 
-
-         if (count($place)>0) {
+        if (count($place)>0) {
+            Redis::setex($q, 60*60*24,$place);
            return response()->json(['places'=>$place ]);
          }else {
            $place = $this->uCodeSearch($q);
@@ -805,31 +816,47 @@ public function testSearchthree(Request $request)
              return response()->json(['places'=>$place ]);
            }
            else {
-             $q = preg_replace("/[\/,-]/", " ", $q);
+
+             $q = str_replace("  "," ",$q);
              $res = $tnt->searchBoolean($q,10);
              if (count($res['ids'])>0) {
+
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
-               return response()->json(['Q'=>$q ,'places' => $place]);
+               Redis::setex($q, 60*60*24,$place);
+               return response()->json(['Q tnt search'=>$q ,'places' => $place]);
              }else{
+               $q = preg_replace("/[\/,-]/", " ", $q);
                $x = explode(" ",$q);
                $size = sizeof($x);
                if (count($size)>1) {
-                 $y=''.$x[1].' '.$x[sizeof($x)-1].'';
+                 $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
                  $res = $tnt->searchBoolean($y,10);
                }else {
                  $res = $tnt->searchBoolean($q,10);
                }
                if (count($res['ids'])>0) {
                   $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+                  Redis::setex($q, 60*60*24,$place);
                   return response()->json(['y'=> $y,'places' => $place]);
                 }else {
-                  DB::table('Searchlytics')->insert(['query' => $q]);
-                  return response()->json([
-                    'message' => 'not found',
-                    'status' => '200',
-                    'Q'=> $q
+                  $q = str_replace("  "," ",$q);
+                  //$q = preg_replace('/\b\w\b(\s|.\s)?/', '', $q); get rid of single letters
+                  $res = $tnt->search($q,10);
+                  if (count($res['ids'])>0) {
+                    $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+                    Redis::setex($q, 60*60*24,$place);
+                    return response()->json(['String' => $q,'places' => $place]);
+                  }
+                  else {
+                    DB::table('Searchlytics')->insert(['query' => $q]);
+                    return response()->json([
+                      'message' => 'not found',
+                      'status' => '200',
+                      'Q Not Found'=> $q
 
-                  ]);
+                    ]);
+                  }
+
                 }
 
              }
@@ -867,9 +894,13 @@ public function testSearchthree(Request $request)
 
        if ($request->has('search')) {
          $q = $request->search;
-         $q= str_replace('#', ' ',$q);
-         $q= str_replace('  ', ' ',$q);
-         $place = DB::table('places')->where('Address','Like',$q.'%')->limit(10)
+         //$q= str_replace('#', ' ',$q);
+         //$q= str_replace('  ', ' ',$q);
+         //$place = $this->elasticSearch($q);
+        //  if (count($place)>0) {
+        //     return response()->json(['source' => 'Elastic','places'=>$place]);
+        // }else{
+        $place = DB::table('places')->where('Address','Like',$q.'%')->limit(10)
          ->get(['id','Address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
          if (count($place)>0) {
             return response()->json(['q'=>$q,'places'=>$place ]);
@@ -948,14 +979,25 @@ public function testSearchthree(Request $request)
 
             }
           }
-        }else {
+
+      }else {
           return new JsonResponse([
             'message' => 'empty request',
           ]);
         }
 
   }
-
+  public function elasticSearch($q)
+  {
+    //$q=$request->search;
+    $q = $q;
+    $query = '54.254.209.206/api/search?q='.$q.'';
+    $client = new \GuzzleHttp\Client();
+    $res = $client->request('POST', $query);
+    $res = $res->getBody();
+    $data = json_decode( $res, true );
+    return $data;
+  }
 
    public function linearsearch($q)
    {

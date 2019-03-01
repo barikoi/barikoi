@@ -7,6 +7,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
 use DB;
 use App\Place;
+use Illuminate\Support\Facades\Input;
 class DataController extends Controller {
 
   /*
@@ -25,13 +26,13 @@ class DataController extends Controller {
     // Insert polygon
     public function insertArea(Request $request)
     {
-      $insert = DB::select("INSERT INTO Area (area, name) VALUES (GEOMFROMTEXT('POLYGON(($request->area))'),'$request->name')");
+      $insert = DB::select("INSERT INTO Area (area, name) VALUES (ST_GEOMFROMTEXT('POLYGON(($request->area))'),'$request->name')");
 
       return response()->json(['Message' => 'Inserted'],200);
     }
     public function updateArea(Request $request,$id)
     {
-      $insert = DB::select("UPDATE Area SET area = GEOMFROMTEXT('POLYGON(($request->area))') WHERE id = '$id'");
+      $insert = DB::select("UPDATE Area SET area = ST_GEOMFROMTEXT('POLYGON(($request->area))') WHERE id = '$id'");
       return response()->json(['Message' => 'Polygon updated'],200);
     }
 
@@ -49,10 +50,10 @@ class DataController extends Controller {
         $area = 'Baridhara DOHS';
       }
       if ($subtype=='all') {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') )");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') )");
       }
       else {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
 
 
       }
@@ -72,8 +73,8 @@ class DataController extends Controller {
       }
 
 
-    //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+    //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, ST_AsWKT(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
+      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -112,9 +113,9 @@ class DataController extends Controller {
         $polygon =$request->polygon;
         //$address = $request->address;
 
-        $places = DB::select("UPDATE places SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
-        $places = DB::select("UPDATE places_last_cleaned SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
-        $places = DB::select("UPDATE placesf SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(GeomFromText('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE places SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE places_last_cleaned SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE placesf SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
 
           return response()->json([
               'Message' => 'Updated'
@@ -165,7 +166,7 @@ class DataController extends Controller {
 
         }
 
-      //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, astext(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
+      //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, ST_AsWKT(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
 
           return response()->json([
               'Total' => count($places),
@@ -208,4 +209,18 @@ class DataController extends Controller {
         DB::select("ALTER TABLE '$table' ADD '$index' INDEX('$field') ");
       }
 
+      public function MultipleSubType(Request $request)
+      {
+        if ($request->has('area') && $request->has('q')) {
+          $filters = explode(',', $request->q);
+          $keys = collect($filters)->values()->all();
+          $data =DB::table('places')->select('Address','subType','pType','longitude','latitude','area')->whereIn('subType',$keys)->where('area',$request->area)->get();
+          return response()->json(['data'=> $data,'Filters'=> $filters]);
+        }
+        else {
+          return response('Need both parameters');
+        }
+
+
+      }
 }

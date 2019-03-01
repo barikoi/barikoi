@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use DB;
+use Carbon\Carbon;
 class FixCopyDatabaseCommand extends Command
 {
     /**
@@ -38,8 +39,9 @@ class FixCopyDatabaseCommand extends Command
     public function handle()
     {
       $startTimer = microtime(true);
+      $today = Carbon::today()->toDateTimeString();
       $this->line("updating place last cleaned for you . . . ");
-      //DB::select("INSERT IGNORE INTO placesf SELECT * FROM places");
+    //  DB::select("INSERT INTO placesf SELECT * FROM places where places.created_at > $today");
       $this->line("\nEmptying the database for you . . . ");
       DB::table('places_3')->truncate();
       $this->line("\nCopying the database for you . . . ");

@@ -94,6 +94,7 @@ $api->version('v1',  function ($api) {
   $api->get('base/{key}','App\Http\Controllers\testController@is_base64');
   $api->get('ward/from/map','App\Http\Controllers\DataController@getWardFromMap');
   $api->get('zone/from/map','App\Http\Controllers\DataController@getZoneFromMap');
+  $api->get('multi/subtype','App\Http\Controllers\DataController@MultipleSubType');
   //$api->get('index/','App\Http\Controllers\PlaceController@updateTntIndex');
   $api->group([
       'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 1
@@ -109,7 +110,8 @@ $api->version('v1',  function ($api) {
   $api->get('api/search/nearby/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@reverseNearBy');
   $api->get('api/search/nearby/area/wise','App\Http\Controllers\BusinessApiController@getAreaDataPolygonWise');
   $api->get('api/search/nearby/category/{apikey}/{distance}/{limit}','App\Http\Controllers\BusinessApiController@nearbyCatagorized');
-  $api->get('api/distance/{apikey}/{start}/{destination}','App\Http\Controllers\testController@osm');
+  $api->get('api/distance/{apikey}/{{start}/{destination}}','App\Http\Controllers\BusinessApiController@Distance');
+  $api->get('api/route/{apikey}/{destination}','App\Http\Controllers\BusinessApiController@GetRoute');
   //$api->get('/api/search/nearby/{search}','App\Http\Controllers\SearchController@APInearBy');
   $api->get('/api/search/analytics','App\Http\Controllers\BusinessApiController@totalApiUser');
 
@@ -360,6 +362,7 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
     $api->post('/tnt/search/test','App\Http\Controllers\SearchController@testSearchthree');
     $api->post('/tnt/search/two','App\Http\Controllers\SearchController@testSearchtwo');
     $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@searchAdmin');
+    $api->post('/tnt/search/elastic/{q}','App\Http\Controllers\SearchController@elasticSearch');
 
 
     $api->get('get/area/by/polygon','App\Http\Controllers\DataController@getAreaByPolygon');

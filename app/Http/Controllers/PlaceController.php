@@ -17,6 +17,7 @@ use App\SavedPlace;
 use App\Referral;
 use App\analytics;
 use App\Image;
+use App\tags;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -130,7 +131,12 @@ class PlaceController extends Controller
         }
         $input->uCode = $ucode;
         $input->isRewarded = 1;
-        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
+        if ($request->has('tags')){
+          $tag = $this->insertTags($request->tags);
+          $input->tags = $tag;
+
+        }
+        $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
         $input->save();
         //$placeId=$input->id;
         //if image is there, in post request
@@ -300,7 +306,7 @@ class PlaceController extends Controller
 
       $input->uCode = $ucode;
       $input->isRewarded = 1;
-      $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
+      $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
       $input->save();
       //$placeId=$input->id;
       //if image is there, in post request
@@ -508,7 +514,7 @@ class PlaceController extends Controller
         }
         $input->uCode = $request->uCode;
         $input->isRewarded = 1;
-        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
+        $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
         $input->save();
 
         //$placeId=$input->id;
@@ -687,7 +693,7 @@ class PlaceController extends Controller
 
         $input->uCode = $request->uCode;
         $input->isRewarded = 0;
-        $input->location = DB::raw("GeomFromText('POINT($lon $lat)')");
+        $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
         $input->save();
 
         //Slack Webhook : notify
@@ -1161,7 +1167,7 @@ class PlaceController extends Controller
         $places->number_of_floors = $request->number_of_floors;
       }
       if ($request->has('longitude') && $request->has('latitude')) {
-        $places->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
+        $places->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
 
       }
 
@@ -1311,7 +1317,7 @@ class PlaceController extends Controller
       $type->type = $request->pType;
       $type->subtype = $request->subType;
       $type->save();
-      return response()->json('updated');
+      return response()->json('Added');
     }
     public function placeSubTypeUpdate(Request $request,$id)
     {
@@ -1367,7 +1373,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
       $distance = 0.1;
       //  $id = $request->user()->id;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType,contact_person_phone,uCode,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1718,13 +1724,13 @@ class PlaceController extends Controller
                     $place = Place::findOrFail($id);
                     $place->longitude = $request->longitude;
                     $place->latitude = $request->latitude;
-                    $place->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
+                    $place->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
                     $place->save();
 
                     $placef = DB::table('placesf')->where('id',$id)->first();
                     $placef->longitude = $request->longitude;
                     $placef->latitude = $request->latitude;
-                    $placef->location = DB::raw("GeomFromText('POINT($request->longitude $request->latitude)')");
+                    $placef->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
                     return response()->json(['Message '=>' Updated']);
                   }else {
                     return response()->json(['Message '=>' Not Permitted']);
@@ -1797,7 +1803,8 @@ class PlaceController extends Controller
                   ORDER BY distance_in_meters LIMIT 1");
                   if (count($result)>0) {
                     return response()->json($result);
-                  }else {
+                  }
+                  else {
                     $road = DB::select("SELECT road_name_number from roads where ST_Distance(road_geometry,POINT($lon,$lat))<20/11114");
                     if (count($road)>0) {
                       return new JsonResponse([
@@ -1990,6 +1997,7 @@ class PlaceController extends Controller
           $publicCount = DB::connection('sqlite')->table('places_3')->where('flag',1)->count();
           $privateCount = DB::connection('sqlite')->table('places_3')->where('flag',0)->count();
 
+
           return response()->json([
             'Total Code' =>$totalCount,
             'Public Code' => $publicCount,
@@ -2154,25 +2162,20 @@ class PlaceController extends Controller
           }
 
 
-        /*  public function updateTntIndex()
+          public function insertTags($tags)
           {
-            $tnt = new TNTSearch;
-             $tnt->loadConfig([
-                'driver'    => 'mysql',
-                'host'      => 'localhost',
-                'database'  => 'ethikana',
-                'username'  => 'root',
-                'password'  => 'root',
-                'storage'   => '/var/www/html/ethikana/storage/custom/'
-              ]);
-               $tnt->selectIndex('places.index');
-             $tnt->getIndex();
-              $data=DB::table('places')->orderBy('id', 'desc')->limit(1)->get(['id','Address']);
-              $id = $data->id;
-              //$index->insert(['id' => '11', 'title' => 'new title', 'article' => 'new article']);
-              return $data;
+            /*$rules = [
 
-          }*/
+              'tags' => 'unique:tags|max:255',
+
+            ];
+            $validator = Validator::make($request->all(), $rules,'tag is not unique');*/
+            $tag = new tags;
+            $tag->tags = $tags;
+            $tag->save();
+
+            return $tags;
+          }
 
 
 

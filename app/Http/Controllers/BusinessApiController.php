@@ -829,7 +829,44 @@ public function Distance($apikey,$start,$destination)
     $data =$data['routes'];
     $data = $data[0]['distance'];
     $data = $data/1000;
+    DB::table('tokens')->where('user_id','=',$bUser)->increment('distance_count',1);
     return response()->json(['Distance'=> $data.' KM']);
+    //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
+  }
+  else{
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
+}
+
+public function GetRoute($apikey,$param)
+{
+  $key = base64_decode($apikey);
+  $key =str_replace('%20', '', $key);
+  if (strpos($key, ':') !== false || Token::where('key','=',$apikey)->where('isActive',1)->exists()) {
+    $bIdAndKey = explode(':', $key);
+  }else {
+    return new JsonResponse([
+      'message' => 'Invalid or No Regsitered Key',
+    ]);
+  }
+
+    $param = explode(';',$param);
+    $start = $param[0];
+    $destination = $param[1];
+
+  $bUser=$bIdAndKey[0];
+  $bKey=$bIdAndKey[1];
+  if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+    //$str = DB::table('places_3')->limit(20)->get(['Address']);
+    $client = new \GuzzleHttp\Client();
+    $res = $client->request('GET', 'http://map.barikoi.xyz:5000/route/v1/driving/'.$start.';'.$destination.'');
+    //preg_match_all('!\d+!', $str->Address, $matches);
+    $res = $res->getBody();
+    $data = json_decode( $res, true );
+    DB::table('tokens')->where('user_id','=',$bUser)->increment('distance_count',1);
+    return response()->json($data);
     //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
   }
   else{
@@ -841,7 +878,8 @@ public function Distance($apikey,$start,$destination)
 public function getAreaDataPolygonWise(Request $request)
 {
   if ($request->has('pType')) {
-    $subtype = $request->pType;
+    $subtype = str_replace('%20', '', $request->pType);
+
   }else {
     $subtype = 'Shop';
   }
@@ -852,10 +890,10 @@ public function getAreaDataPolygonWise(Request $request)
     $area = 'Baridhara DOHS';
   }
   if ($subtype=='all') {
-    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) LIMIT 10");
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_Astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) LIMIT 10");
   }
   else {
-    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and pType LIKE '%$subtype%' LIMIT 10");
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and pType LIKE '%$subtype%' LIMIT 10");
 
 
   }
