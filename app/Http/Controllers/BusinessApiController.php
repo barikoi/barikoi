@@ -890,10 +890,10 @@ public function getAreaDataPolygonWise(Request $request)
     $area = 'Baridhara DOHS';
   }
   if ($subtype=='all') {
-    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_Astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) LIMIT 10");
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_Astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) LIMIT 100");
   }
   else {
-    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and pType LIKE '%$subtype%' LIMIT 10");
+    $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_astext(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and pType LIKE '%$subtype%' LIMIT 100");
 
 
   }

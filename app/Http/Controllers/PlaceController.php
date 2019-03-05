@@ -1330,17 +1330,11 @@ class PlaceController extends Controller
 
     public function getPlaceType()
     {
-      $type = PlaceType::all();
+      $type = PlaceType::orderBy('type','asc')->get();
 
       return $type->toJson();
     }
-    public function getPlaceType1()
-    {
-      $type = PlaceType::all();
-      $answer="hello";
-      $list[] = array('text' => 'welcome to our store!', 'text' => 'How can I help you');
-      return response()->json($list);
-    }
+
     public function getPlaceSubType($type)
     {
       $type =str_replace('%20', ' ', $type);

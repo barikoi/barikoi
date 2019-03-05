@@ -38,4 +38,10 @@ class TradeLicenseController extends Controller{
       return response()->json(['Data' => $place]);
     }
 
+    public function updateLicense($pid)
+    {
+      $entity = DB::table('places')->where('pid',$pid)->get();
+      
+    }
+
 }
