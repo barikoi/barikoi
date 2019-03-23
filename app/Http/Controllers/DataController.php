@@ -82,6 +82,25 @@ class DataController extends Controller {
           ]);
 
     }
+    // test function for badhon
+    public function SearchInPolygonTest(Request $request)
+    {
+
+      if ($request->has('area')) {
+        $area = $request->area;
+      //  $area = 'ST_GeomFromText(POLYGON(('$area')))'
+      }
+
+
+    //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, ST_AsWKT(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
+      $places = DB::select("SELECT id,  (longitude+0)  AS lng,(latitude+0) AS lat,Address, area,subType AS subtype, pType AS ptype,uCode, user_id AS userID,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+
+        return response()->json([
+            'Total' => count($places),
+            'places'=> $places
+          ]);
+
+    }
 
 
 

@@ -52,13 +52,13 @@ class FixCopyDatabaseCommand extends Command
       alternate_address,
       longitude,
       latitude,
-      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description,contact_person_phone)
+      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description,contact_person_phone,tags)
       SELECT id,Address,
               CONCAT(Address,', ', area),
               CONCAT(Address,', ', area),
       		    longitude,
               latitude,
-              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description, contact_person_phone
+              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description, contact_person_phone,tags
        FROM placesf");
       $this->line("\n\nFixing the new address for you . . . ");
       DB::select("UPDATE places_3 SET new_address = REPLACE(new_address, ', ',',');");

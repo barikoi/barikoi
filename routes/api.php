@@ -25,48 +25,21 @@ $api->version('v1',  function ($api) {
   //start, test routes//
 
 
-   $api->get('/place/get/type1/',[
-     'as' => 'place.type.get1',
-     'uses' => 'App\Http\Controllers\PlaceController@getPlaceType1',
-   ]);
+   $api->get('/place/get/type1/','App\Http\Controllers\PlaceController@getPlaceType1');
 //==================BOT=========
 
-    $api->post('/search/nearby',[
-      'as' => 'bot.search.nearby',
-      'uses' => 'App\Http\Controllers\SearchController@findNearby',
-    ]);
-    $api->post('/search/all',[
-      'as' => 'bot.search.all',
-      'uses' => 'App\Http\Controllers\SearchController@findAll',
-    ]);
+    $api->post('/search/nearby','App\Http\Controllers\SearchController@findNearby');
+    $api->post('/search/all','App\Http\Controllers\SearchController@findAll');
 
-    $api->post('/search/travel',[
-      'as' => 'bot.search.travel',
-      'uses' => 'App\Http\Controllers\SearchController@travel',
-    ]);
-    $api->post('/search/food',[
-      'as' => 'bot.search.food',
-      'uses' => 'App\Http\Controllers\SearchController@food',
-    ]);
+    $api->post('/search/travel','App\Http\Controllers\SearchController@travel');
+    $api->post('/search/food','App\Http\Controllers\SearchController@food');
 //=============================
-  $api->post('/landmarks', [
-    'as' => 'nearest.landmarks',
-    'uses' => 'App\Http\Controllers\LandmarkNavController@index',
-  ]);
-  $api->post('/landmark/nav', [
-    'as' => 'nearest.landmarks',
-    'uses' => 'App\Http\Controllers\LandmarkNavController@LandmarkNav',
-  ]);
+  $api->post('/landmarks','App\Http\Controllers\LandmarkNavController@index');
+  $api->post('/landmark/nav','App\Http\Controllers\LandmarkNavController@LandmarkNav');
 //Route to get client IP
-  $api->get('/ip', [
-    'as' => 'ip',
-    'uses' => 'App\Http\Controllers\PlaceController@get_client_ip',
-  ]);
+  $api->get('/ip','App\Http\Controllers\PlaceController@get_client_ip');
 //This route generate random Words
-  $api->get('/word',[
-    'as' => 'random.words',
-    'uses' => 'App\Http\Controllers\PlaceController@word',
-  ]);
+  $api->get('/word','App\Http\Controllers\PlaceController@word');
 //Public Tourism api
   $api->get('/ghurbokoi','App\Http\Controllers\PlaceController@tourism');
   $api->get('/paginate','App\Http\Controllers\PlaceController@shobaiTest');
@@ -95,6 +68,7 @@ $api->version('v1',  function ($api) {
   $api->get('ward/from/map','App\Http\Controllers\DataController@getWardFromMap');
   $api->get('zone/from/map','App\Http\Controllers\DataController@getZoneFromMap');
   $api->get('multi/subtype','App\Http\Controllers\DataController@MultipleSubType');
+  $api->get('get/tags','App\Http\Controllers\PlaceController@GetTags');
   //$api->get('index/','App\Http\Controllers\PlaceController@updateTntIndex');
   $api->group([
       'middleware' => 'api.throttle', 'limit' => 100, 'expires' => 1
@@ -125,168 +99,78 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
   //end, test routes//
   //barikoi pool-bot
   //bot,ride search
-    $api->get('/bot/pool/ride/search', [
-      'as' => 'ride.search.bot',
-      'uses' => 'App\Http\Controllers\PoolRideController@indexBot'
-    ]);
+    $api->get('/bot/pool/ride/search','App\Http\Controllers\PoolRideController@indexBot');
   // Auth/ login/ reggetister
-  $api->post('/auth/register', [
-    'as' => 'api.auth.register',
-    'uses' => 'App\Http\Controllers\Auth\AuthController@Register',
-  ]);
+  $api->post('/auth/register','App\Http\Controllers\Auth\AuthController@Register');
 
-  $api->post('/auth/login', [
-    'as' => 'api.auth.login',
-    'uses' => 'App\Http\Controllers\Auth\AuthController@postLogin',
-  ]);
+  $api->post('/auth/login','App\Http\Controllers\Auth\AuthController@postLogin');
 
-  $api->post('admin/login', [
-    'as' => 'api.admin.login',
-    'uses' => 'App\Http\Controllers\Auth\AuthController@postLoginAdmin',
-  ]);
-  $api->post('business/login', [
-    'as' => 'api.business.login',
-    'uses' => 'App\Http\Controllers\Auth\AuthController@postLoginBusiness',
-  ]);
+  $api->post('admin/login','App\Http\Controllers\Auth\AuthController@postLoginAdmin');
+  $api->post('business/login','App\Http\Controllers\Auth\AuthController@postLoginBusiness');
 
   //ADN: Password Reset/email
-  $api->post('/auth/password/reset',[
-     'as' => 'auth.password.reset',
-     'uses' => 'App\Http\Controllers\Auth\AuthController@resetPassword',
-   ]);
+  $api->post('/auth/password/reset','App\Http\Controllers\Auth\AuthController@resetPassword');
 
 //get all codes by device id
-  $api->get('/place/get/app/{id}/',[
-    'as' => 'place.get.app',
-    'uses' => 'App\Http\Controllers\PlaceController@KhujTheSearchApp',
-  ]);
+  $api->get('/place/get/app/{id}/','App\Http\Controllers\PlaceController@KhujTheSearchApp');
 
-  $api->get('/web/search/{nameorcode}',[
-    'as' => 'web.searchby.nameorcode',
-    'uses' => 'App\Http\Controllers\PlaceController@searchNameAndCodeWeb',
-  ]);
+  $api->get('/web/search/{nameorcode}','App\Http\Controllers\PlaceController@searchNameAndCodeWeb');
 
   //App\Http\Controllers\SearchController@index
   //App\Http\Controllers\PlaceController@searchNameAndCodeWeb
 /// Get place type and subtype
-  $api->get('/place/get/sub/type/{type}/',[
-      'as' => 'place.get.sub.type',
-      'uses' => 'App\Http\Controllers\PlaceController@getPlaceSubType',
-   ]);
+  $api->get('/place/get/sub/type/{type}/','App\Http\Controllers\PlaceController@getPlaceSubType');
 
-   $api->get('/place/get/type/',[
-     'as' => 'place.type.get',
-     'uses' => 'App\Http\Controllers\PlaceController@getPlaceType',
-   ]);
+   $api->get('/place/get/type/','App\Http\Controllers\PlaceController@getPlaceType');
   /// Post place type and subtype
-   $api->post('/place/type',[
-     'as' => 'place.type',
-     'uses' => 'App\Http\Controllers\PlaceController@placeType',
-   ]);
-   $api->post('/place/sub/type',[
-     'as' => 'place.sub.type',
-     'uses' => 'App\Http\Controllers\PlaceController@placeSubType',
-   ]);
+   $api->post('/place/type','App\Http\Controllers\PlaceController@placeType');
+   $api->post('/place/sub/type','App\Http\Controllers\PlaceController@placeSubType');
 
 
   // Post place addresss lon lat
-    $api->post('/place/post',[
-      'as' => 'place.post',
-      'uses' => 'App\Http\Controllers\PlaceController@StorePlace',
-    ]);
+    $api->post('/place/post','App\Http\Controllers\PlaceController@StorePlace');
   // Post custom code
-    $api->post('/place/custom/post',[
-      'as' => 'place.post.custom',
-      'uses' => 'App\Http\Controllers\PlaceController@StoreCustomPlace',
-    ]);
+    $api->post('/place/custom/post','App\Http\Controllers\PlaceController@StoreCustomPlace');
     //get place by barikoicode
-    $api->get('/place/get/{id}/',[
-      'as' => 'place.get.byid',
-      'uses' => 'App\Http\Controllers\PlaceController@KhujTheSearch',
-    ]);
+    $api->get('/place/get/{id}/','App\Http\Controllers\PlaceController@KhujTheSearch');
 
-    $api->get('/place/get/test/{id}/',[
-      'as' => 'place.get.testbyid',
-      'uses' => 'App\Http\Controllers\PlaceController@KhujTheSearchTest',
-    ]);
+    $api->get('/place/get/test/{id}/','App\Http\Controllers\PlaceController@KhujTheSearchTest');
     //get all the codes admin panel
-    $api->get('/place/get/',[
-      'as' => 'places.get',
-      'uses' => 'App\Http\Controllers\PlaceController@shobaix',
-    ]);
+    $api->get('/place/get/','App\Http\Controllers\PlaceController@shobaix');
 
 
-    $api->get('/place/duplicate/{id}',[
-      'as' => 'place.duplicate',
-      'uses' => 'App\Http\Controllers\PlaceController@duplicate',
-    ]);
-    $api->delete('/place/fake',[
-      'as' => 'place.fake',
-      'uses' => 'App\Http\Controllers\PlaceController@fakeCatcher',
-    ]);
+    $api->get('/place/duplicate/{id}','App\Http\Controllers\PlaceController@duplicate');
+    $api->delete('/place/fake','App\Http\Controllers\PlaceController@fakeCatcher');
 
 
 
     //update place by place code
-    $api->post('/place/update/{barikoicode}',[
-      'as' => 'places.update',
-      'uses' => 'App\Http\Controllers\PlaceController@halnagad',
-    ]);
+    $api->post('/place/update/{barikoicode}','App\Http\Controllers\PlaceController@halnagad');
 //Get near by public places
-    $api->get('/public/place/{ucode}',[
-      'as' => 'place.public',
-      'uses' => 'App\Http\Controllers\PlaceController@ashpash',
-    ]);
+    $api->get('/public/place/{ucode}','App\Http\Controllers\PlaceController@ashpash');
 
     //Get near by public places by  lon lat
     // $api->get('/public/find/nearby/place/{latitude}/{longitude}',[
     //       'as' => 'place.lon.public',
     //       'uses' => 'App\Http\Controllers\PlaceController@amarashpash',
     //     ]);
-    $api->get('/public/find/nearby/place/',[
-      'as' => 'place.lon.public',
-      'uses' => 'App\Http\Controllers\PlaceController@amarashpash',
-    ]);
-    $api->get('/verification/nearby/place/',[
-      'as' => 'place.lon.verify',
-      'uses' => 'App\Http\Controllers\PlaceController@amarashpashVerification',
-    ]);
-    $api->get('/verification/nearby/place/dtool',[
-      'as' => 'place.lon.verify',
-      'uses' => 'App\Http\Controllers\PlaceController@amarashpashVerificationDtool',
-    ]);
-    $api->get('/verification/nearby/place/analytics',[
-      'as' => 'place.lon.verify.analytics',
-      'uses' => 'App\Http\Controllers\PlaceController@amarashpashVerificationAnalytics',
-    ]);
+    $api->get('/public/find/nearby/place/','App\Http\Controllers\PlaceController@amarashpash');
+    $api->get('/verification/nearby/place/','App\Http\Controllers\PlaceController@amarashpashVerification');
+    $api->get('/verification/nearby/place/dtool','App\Http\Controllers\PlaceController@amarashpashVerificationDtool');
+    $api->get('/verification/nearby/place/analytics','App\Http\Controllers\PlaceController@amarashpashVerificationAnalytics');
 
     //Get near by public places by  Name
-    $api->post('/public/find',[
-      'as' => 'place.searchby.name',
-      'uses' => 'App\Http\Controllers\PlaceController@search',
-    ]);
+    $api->post('/public/find','App\Http\Controllers\PlaceController@search');
    //test
 
 
     //get a place from nearby list
-    $api->get('/place/{bcode}',[
-      'as' => 'single.place',
-      'uses' => 'App\Http\Controllers\PlaceController@getListViewItem',
-    ]);
-    $api->get('/saved/place/get/{id}',[
-      'as' => 'places.saved.get',
-      'uses' => 'App\Http\Controllers\PlaceController@getSavedPlace',
-    ]);
+    $api->get('/place/{bcode}','App\Http\Controllers\PlaceController@getListViewItem');
+    $api->get('/saved/place/get/{id}','App\Http\Controllers\PlaceController@getSavedPlace');
 
-    $api->post('/saved/place/delete/{id}',[
-      'as' => 'places.saved.delete',
-      'uses' => 'App\Http\Controllers\PlaceController@DeleteSavedPlace',
-    ]);
+    $api->post('/saved/place/delete/{id}','App\Http\Controllers\PlaceController@DeleteSavedPlace');
 
-  $api->post('/connect/us/',[
-      'as' => 'place.contact',
-      'uses' => 'App\Http\Controllers\PlaceController@contactUS',
-    ]);
+  $api->post('/connect/us/','App\Http\Controllers\PlaceController@contactUS');
 
     //full text
 
@@ -296,28 +180,16 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
     ]);
   */
 
-    $api->get('/all/leaderboard/contributor',[
-      'as' => 'public.leaderboard.leaderboard',
-      'uses' => 'App\Http\Controllers\LeaderBoardController@ContributorLeaderBoard',
-    ]);
+    $api->get('/all/leaderboard/contributor','App\Http\Controllers\LeaderBoardController@ContributorLeaderBoard');
 
     //Leaderboard Till Date
-    $api->get('/all/leaderboard',[
-      'as' => 'public.leaderboard.tilldate',
-      'uses' => 'App\Http\Controllers\LeaderBoardController@indexTillDate',
-    ]);
+    $api->get('/all/leaderboard','App\Http\Controllers\LeaderBoardController@indexTillDate');
 
     //Leaderboard Weekly
-    $api->get('/weekly/leaderboard',[
-      'as' => 'public.leaderboard.weekly',
-      'uses' => 'App\Http\Controllers\LeaderBoardController@indexWeekly',
-    ]);
+    $api->get('/weekly/leaderboard','App\Http\Controllers\LeaderBoardController@indexWeekly');
 
     //Leaderboard Monthly
-    $api->get('/monthly/leaderboard',[
-      'as' => 'public.leaderboard.monthly',
-      'uses' => 'App\Http\Controllers\LeaderBoardController@indexMonthly',
-    ]);
+    $api->get('/monthly/leaderboard','App\Http\Controllers\LeaderBoardController@indexMonthly');
 
 
 
@@ -373,87 +245,49 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
         'middleware' => 'api.auth',
     ], function ($api) {
 
+
+      // searchFrom APP
+      $api->post('/search/autocomplete','App\Http\Controllers\SearchController@SearchAutocomplete');
+      $api->post('/search/geocode/{id}','App\Http\Controllers\SearchController@GeoCode');
       //Test Routes: with images
       //ADD a new PLACE
-      $api->post('/test/auth/place/newplace',[
-        'as' => 'test.api.auth.place.new',
-        'uses' => 'App\Http\Controllers\PlaceController@authAddNewPlace',
-      ]);
+      $api->post('/test/auth/place/newplace','App\Http\Controllers\PlaceController@authAddNewPlace');
       // MAPPERS ADDING A NEW PLACE
-      $api->post('/test/auth/place/newplace/mapper',[
-        'as' => 'test.api.auth.place.new.mapper',
-        'uses' => 'App\Http\Controllers\PlaceController@XauthAddNewPlace',
-      ]);
+      $api->post('/test/auth/place/newplace/mapper','App\Http\Controllers\PlaceController@XauthAddNewPlace');
 
       //add place with custom CODE
-      $api->post('/test/auth/place/newplacecustom',[
-        'as' => 'test.api.auth.place.newcustom',
-        'uses' => 'App\Http\Controllers\PlaceController@authAddCustomPlace',
-      ]);
+      $api->post('/test/auth/place/newplacecustom','App\Http\Controllers\PlaceController@authAddCustomPlace');
       //Test Routes
 
-      $api->get('/', [
-          'uses' => 'App\Http\Controllers\APIController@getIndex',
-          'as' => 'api.index'
-        ]);
+      $api->get('/','App\Http\Controllers\APIController@getIndex');
                //Refresh Token
-      $api->patch('/auth/refresh', [
-          'uses' => 'App\Http\Controllers\Auth\AuthController@patchRefresh',
-          'as' => 'api.auth.refresh'
-      ]);
+      $api->patch('/auth/refresh','App\Http\Controllers\Auth\AuthController@patchRefresh');
       // GET USER INFORMATION
-      $api->get('/auth/user', [
-          'uses' => 'App\Http\Controllers\Auth\AuthController@getUser',
-          'as' => 'api.auth.user'
-      ]);
+      $api->get('/auth/user','App\Http\Controllers\Auth\AuthController@getUser');
 
       //Delete Token
-      $api->delete('/auth/invalidate', [
-          'uses' => 'App\Http\Controllers\Auth\AuthController@deleteInvalidate',
-          'as' => 'api.auth.invalidate'
-      ]);
+      $api->delete('/auth/invalidate','App\Http\Controllers\Auth\AuthController@deleteInvalidate');
 
       //GET PLACES analytics
-      $api->get('/analytics',[
-        'as' => 'place.collection.analytics',
-        'uses' => 'App\Http\Controllers\PlaceController@analytics',
-      ]);
+      $api->get('/analytics','App\Http\Controllers\PlaceController@analytics');
 
-      $api->post('/auth/UpdatePass',[
-        'as' => 'user.updatePass',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@UpdatePass',
-      ]);
+      $api->post('/auth/UpdatePass','App\Http\Controllers\Auth\AuthController@UpdatePass');
 
       //mail test route : dont use in prod
-      $api->post('/auth/UpdatePass12',[
-        'as' => 'user.updatePass',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@UpdatePass12',
-      ]);
+      $api->post('/auth/UpdatePass12','App\Http\Controllers\Auth\AuthController@UpdatePass12');
 
       //ADN: Show all codes for a specific Authenticated user by user_id (My Places)
-      $api->get('/auth/placebyuid/paginate', [
-        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserIdPaginate',
-        'as' => 'api.auth.uid.paginate'
-      ]);
+      $api->get('/auth/placebyuid/paginate','App\Http\Controllers\PlaceController@getPlacesByUserIdPaginate');
       // USED IN MOBILE APP and used to provide data with a limit (Dtool/Verification APP)
-      $api->get('/auth/placebyuid/{deviceid}', [
-        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserDeviceId',
-        'as' => 'api.auth.deviceid'
-      ]);
+      $api->get('/auth/placebyuid/{deviceid}','App\Http\Controllers\PlaceController@getPlacesByUserDeviceId');
       // Updates a places position with drag and drop! USED in Verify APP
-      $api->patch('/drop/update/app/{id}',[
-        'as' => 'drop.update.app',
-        'uses' => 'App\Http\Controllers\PlaceController@dropEditApp',
-      ]);
+      $api->patch('/drop/update/app/{id}','App\Http\Controllers\PlaceController@dropEditApp');
 
 
 
       //Show all places by User ID: for web mainly
       /// get places for the users! in the app and web
-      $api->get('/auth/placeby/userid/', [
-        'uses' => 'App\Http\Controllers\PlaceController@getPlacesByUserId',
-        'as' => 'api.auth.userid'
-      ]);
+      $api->get('/auth/placeby/userid/','App\Http\Controllers\PlaceController@getPlacesByUserId');
 
       /*
       @@ USER HOME AND WORK
@@ -543,168 +377,84 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
     //=================================================
       //ADN: add a new place
       ///***********
-      $api->get('/public/find/nearby/auth/',[
-        'as' => 'place.nearby.public',
-        'uses' => 'App\Http\Controllers\PlaceController@amarashpashAuth',
-      ]);
+      $api->get('/public/find/nearby/auth/','App\Http\Controllers\PlaceController@amarashpashAuth');
       //GET CATAGORIZED nearby DATA
       $api->get('/public/find/nearby/by/catagory','App\Http\Controllers\PlaceController@amarashpashCatagorized');
       //**********
 
 
       //search for client:app
-      $api->get('/auth/search/{bcode}',[
-        'as' => 'auth.app.search',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@AppKhujTheSearch',
-      ]);
+      $api->get('/auth/search/{bcode}','App\Http\Controllers\Auth\AuthController@AppKhujTheSearch');
 
       //ADN: Update Place by Place Code or PLACE ID
 
-      $api->post('/auth/place/update/{placeid}',[
-        'as' => 'api.auth.places.update',
-        'uses' => 'App\Http\Controllers\PlaceController@halnagadMyPlace',
-      ]);
-      $api->patch('update/place/{placeid}',[
-        'as' => 'api.auth.places.update',
-        'uses' => 'App\Http\Controllers\PlaceController@halnagadMyPlace',
-      ]);
+      $api->post('/auth/place/update/{placeid}','App\Http\Controllers\PlaceController@halnagadMyPlace');
+      $api->patch('update/place/{placeid}','App\Http\Controllers\PlaceController@halnagadMyPlace');
 
       //ADN:Delete place by BariKoi code or place ID
-      $api->get('/auth/place/delete/{barikoicode}',[
-        'as' => 'auth.places.delete',
-        'uses' => 'App\Http\Controllers\PlaceController@mucheFeliMyPlace',
-      ]);
+      $api->get('/auth/place/delete/{barikoicode}','App\Http\Controllers\PlaceController@mucheFeliMyPlace');
 
     //delete place by place id()
-     $api->get('/place/delete/{id}',[
-       'as' => 'places.delete',
-       'uses' => 'App\Http\Controllers\PlaceController@mucheFeli',
-     ]);
+     $api->get('/place/delete/{id}','App\Http\Controllers\PlaceController@mucheFeli');
 
       //ADN: Get All List of Favorite Places for Authenticated User by user_id
-      $api->get('/auth/savedplacebyuid',[
-        'uses' => 'App\Http\Controllers\PlaceController@getSavedPlacesByUserId',
-        'as' => 'api.auth.savedplaces'
-      ]);
+      $api->get('/auth/savedplacebyuid','App\Http\Controllers\PlaceController@getSavedPlacesByUserId');
       //ADN: Add place to favorite
-      $api->post('/auth/save/place',[
-        'as' => 'api.auth.places.favorite.add',
-        'uses' => 'App\Http\Controllers\PlaceController@authAddFavoritePlace',
-      ]);
+      $api->post('/auth/save/place','App\Http\Controllers\PlaceController@authAddFavoritePlace');
       //ADN:remove place from favorite or from saved places
-      $api->get('/auth/saved/place/delete/{barikoicode}',[
-        'as' => 'api.auth.places.favorite.delete',
-        'uses' => 'App\Http\Controllers\PlaceController@authDeleteFavoritePlace',
-      ]);
+      $api->get('/auth/saved/place/delete/{barikoicode}','App\Http\Controllers\PlaceController@authDeleteFavoritePlace');
 
       //Generate Ref_Code for Early Users;(22thpril Onward,Ref_Code auto generated on Registration)
-      $api->get('/auth/generate/refcode/',[
-        'as' => 'api.auth.generate.refcode',
-        'uses' => 'App\Http\Controllers\PlaceController@authRefCodeGen',
-      ]);
+      $api->get('/auth/generate/refcode/','App\Http\Controllers\PlaceController@authRefCodeGen');
 
       //Redeem A Ref_Code
-      $api->post('/auth/redeem/referrals',[
-        'as' => 'api.auth.redeem.refcode',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@authRedeemRefCode',
-      ]);
+      $api->post('/auth/redeem/referrals','App\Http\Controllers\Auth\AuthController@authRedeemRefCode');
 
       //ADN: busines_key generate
-      $api->POST('/auth/business/keygen/',[
-        'as' => 'auth.business.keygen.email',
-        'uses' => 'App\Http\Controllers\BusinessApiController@generateApiKey',
-      ]);
+      $api->POST('/auth/business/keygen/','App\Http\Controllers\BusinessApiController@generateApiKey');
      //Current Active key and Number of Total Key
-      $api->get('/auth/business/CurrentActiveKey/',[
-        'as' => 'business.current.active.key',
-        'uses' => 'App\Http\Controllers\BusinessApiController@getCurrentActiveKey',
-      ]);
+      $api->get('/auth/business/CurrentActiveKey/','App\Http\Controllers\BusinessApiController@getCurrentActiveKey');
 
       //Add Business Details by Business User
-      $api->post('/auth/business/AddDescription/{pid}',[
-        'as' => 'business.add.description',
-        'uses' => 'App\Http\Controllers\BusinessApiController@AddBusinessDescription',
-      ]);
+      $api->post('/auth/business/AddDescription/{pid}','App\Http\Controllers\BusinessApiController@AddBusinessDescription');
 
       //Show Business Details by Business User
-      $api->get('/auth/business/ShowDescription/{pid}',[
-        'as' => 'business.show.description',
-        'uses' => 'App\Http\Controllers\BusinessApiController@ShowBusinessDescription',
-      ]);
+      $api->get('/auth/business/ShowDescription/{pid}','App\Http\Controllers\BusinessApiController@ShowBusinessDescription');
 
       //Get Users List for the admin
-      $api->get('/auth/admin/userlist',[
-        'as' => 'admin.listusers',
-        'uses' => 'App\Http\Controllers\Auth\AuthController@getUserList',
-      ]);
+      $api->get('/auth/admin/userlist','App\Http\Controllers\Auth\AuthController@getUserList');
 
       //user info for the admin
-      $api->get('/user/{id}',[
-        'as' => 'user.individual',
-        'uses' => 'App\Http\Controllers\UserManagementController@index',
-      ]);
+      $api->get('/user/{id}','App\Http\Controllers\UserManagementController@index');
 
       //user profile details:Client
-      $api->get('/user/profile/details',[
-        'as' => 'user.profile.details',
-        'uses' => 'App\Http\Controllers\UserProfileController@index'
-      ]);
+      $api->get('/user/profile/details','App\Http\Controllers\UserProfileController@index');
 //User profile  picture
-      $api->post('/user/profile/photo',[
-        'as' => 'upolad.profile.pic',
-        'uses' => 'App\Http\Controllers\UserProfileController@storeProPic',
-      ]);
+      $api->post('/user/profile/photo','App\Http\Controllers\UserProfileController@storeProPic');
       // GET USER PROFILE PICTURE
-      $api->get('/user/profile/photo',[
-        'as' => 'show.profile.pic',
-        'uses' => 'App\Http\Controllers\UserProfileController@showProPic',
-      ]);
+      $api->get('/user/profile/photo','App\Http\Controllers\UserProfileController@showProPic');
 
-      $api->delete('/user/profile/photo',[
-        'as' => 'remove.profile.pic',
-        'uses' => 'App\Http\Controllers\UserProfileController@destroyProPic',
-      ]);
+      $api->delete('/user/profile/photo','App\Http\Controllers\UserProfileController@destroyProPic');
       //places added by user
-      $api->get('/user/{id}/places',[
-        'as' => 'places.by.user',
-        'uses' => 'App\Http\Controllers\UserManagementController@show',
-      ]);
+      $api->get('/user/{id}/places','App\Http\Controllers\UserManagementController@show');
       //delete place
-      $api->delete('/user/{id}/place',[
-        'as' => 'delete.place',
-        'uses' => 'App\Http\Controllers\UserManagementController@destroy',
-      ]);
+      $api->delete('/user/{id}/place','App\Http\Controllers\UserManagementController@destroy');
       //update place
-      $api->post('/user/{id}/place',[
-        'as' => 'update.place',
-        'uses' => 'App\Http\Controllers\UserManagementController@update',
-      ]);
+      $api->post('/user/{id}/place','App\Http\Controllers\UserManagementController@update');
       //review-rating
       //save a review+rating for a place id
 
 
       //search from app
-      $api->get('/app/search/{nameorcode}',[
-        'as' => 'app.searchby.nameorcode',
-        'uses' => 'App\Http\Controllers\PlaceController@searchNameAndCodeApp',
-      ]);
+      $api->get('/app/search/{nameorcode}','App\Http\Controllers\PlaceController@searchNameAndCodeApp');
 
       //rewards controller starts
       /// rewards list for users
-      $api->get('/rewards', [
-        'as' => 'rewards.list',
-        'uses' => 'App\Http\Controllers\RewardsController@index',
-      ]);
+      $api->get('/rewards','App\Http\Controllers\RewardsController@index');
       // request to redeem reward points
-      $api->post('/reward', [
-        'as' => 'rewards.redeem.request',
-        'uses' => 'App\Http\Controllers\RewardsController@store',
-      ]);
+      $api->post('/reward','App\Http\Controllers\RewardsController@store');
       //get the list of reward request/queue
-      $api->get('/rewardhistory', [
-        'as' => 'rewards.redeem.request',
-        'uses' => 'App\Http\Controllers\RewardsController@show',
-      ]);
+      $api->get('/rewardhistory','App\Http\Controllers\RewardsController@show');
       #User Part Ends#
 
 
@@ -712,70 +462,34 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
 
   Admin Part Starts
   */
-      $api->get('/get/count',[
-        'as' => 'place.count',
-        'uses' => 'App\Http\Controllers\PlaceController@count',
-      ]);
+      $api->get('/get/count','App\Http\Controllers\PlaceController@count');
       //show the requested queue , for Admin
-      $api->get('/admin/requests', [
-        'as' => 'rewards.request.queue',
-        'uses' => 'App\Http\Controllers\RewardRequestQueueController@index',
-      ]);
+      $api->get('/admin/requests','App\Http\Controllers\RewardRequestQueueController@index');
 
-      $api->get('/admin/requests/{id}', [
-        'as' => 'rewards.request.queue.item',
-        'uses' => 'App\Http\Controllers\RewardRequestQueueController@show',
-      ]);
+      $api->get('/admin/requests/{id}','App\Http\Controllers\RewardRequestQueueController@show');
 
-      $api->post('/admin/requests/update/{id}', [
-        'as' => 'rewards.request.queue',
-        'uses' => 'App\Http\Controllers\RewardRequestQueueController@update',
-      ]);
+      $api->post('/admin/requests/update/{id}','App\Http\Controllers\RewardRequestQueueController@update');
 
 
       //reward management controller(admin) starts
       //show reward list
-      $api->get('/admin/rewards', [
-        'as' => 'all.rewards',
-        'uses' => 'App\Http\Controllers\RewardsManagementController@index',
-      ]);
+      $api->get('/admin/rewards','App\Http\Controllers\RewardsManagementController@index');
       //show a reward item
-      $api->get('/admin/reward/{id}', [
-        'as' => 'reward.details',
-        'uses' => 'App\Http\Controllers\RewardsManagementController@show',
-      ]);
+      $api->get('/admin/reward/{id}','App\Http\Controllers\RewardsManagementController@show');
       //store new reward from admin
-      $api->post('/admin/reward', [
-        'as' => 'add.reward',
-        'uses' => 'App\Http\Controllers\RewardsManagementController@store',
-      ]);
+      $api->post('/admin/reward','App\Http\Controllers\RewardsManagementController@store');
       //update a reward item
-      $api->post('/admin/reward/{id}', [
-        'as' => 'update.reward',
-        'uses' => 'App\Http\Controllers\RewardsManagementController@update',
-      ]);
+      $api->post('/admin/reward/{id}','App\Http\Controllers\RewardsManagementController@update');
       //delete a reward item
-      $api->delete('/admin/reward/{id}', [
-        'as' => 'reward.delete',
-        'uses' => 'App\Http\Controllers\RewardsManagementController@destroy',
-      ]);
+      $api->delete('/admin/reward/{id}','App\Http\Controllers\RewardsManagementController@destroy');
 
 
 
-      $api->post('/image/delete', [
-        'as' => 'image.delete',
-        'uses' => 'App\Http\Controllers\ImageController@destroyImage'
-      ]);
+      $api->post('/image/delete','App\Http\Controllers\ImageController@destroyImage');
 
-      $api->post('/image', [
-        'as' => 'image.single',
-        'uses' => 'App\Http\Controllers\ImageController@store'
-      ]);
+      $api->post('/image','App\Http\Controllers\ImageController@store');
       //search log
-      $api->get('/searchlog', [
-        'as' => 'search.log',
-        'uses' => 'App\Http\Controllers\SearchController@searchLog',
-      ]);
+      $api->get('/searchlog','App\Http\Controllers\SearchController@searchLog');
 
 
 
@@ -829,37 +543,23 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
 
       //---------------------Business User Routes-----------------------//
         //Register a Business user: from "Admin panel" or "SignUp as a Business feature"
-        $api->post('/business/register', [
-            'as' => 'api.business.register',
-            'uses' => 'App\Http\Controllers\BusinessApiController@RegisterBusinessUser',
-        ]);
+        $api->post('/business/register','App\Http\Controllers\BusinessApiController@RegisterBusinessUser');
         //pass the encoded API-KEY alog with post request
-        $api->post('/business/StorePlace/{apikey}',[
-          'as' => 'business.store.place',
-          'uses' => 'App\Http\Controllers\BusinessApiController@addPlaceByBusinessUser',
-        ]);
+        $api->post('/business/StorePlace/{apikey}','App\Http\Controllers\BusinessApiController@addPlaceByBusinessUser');
 
 
         //places added by a business user
-        $api->get('/business/PlacesAdded/{apikey}',[
-          'as' => 'business.added.place',
-          'uses' => 'App\Http\Controllers\BusinessApiController@PlacesAddedByBusinessUser',
-        ]);
+        $api->get('/business/PlacesAdded/{apikey}','App\Http\Controllers\BusinessApiController@PlacesAddedByBusinessUser');
 
         //places added by a business user
-        $api->get('/business/UpdatePlace/{apikey}',[
-          'as' => 'business.update.place',
-          'uses' => 'App\Http\Controllers\BusinessApiController@UpdatePlaceByBusinessUser',
-        ]);
+        $api->get('/business/UpdatePlace/{apikey}','App\Http\Controllers\BusinessApiController@UpdatePlaceByBusinessUser');
 
         $api->get('/developer/analytics','App\Http\Controllers\BusinessApiController@TokenAnalysis');
+        $api->get('/developer/analytics/all','App\Http\Controllers\BusinessApiController@developerAnalytics');
 
         //----------------------------- Business API ENDs----------------------------------
 
-        $api->patch('/drop/update/{id}',[
-          'as' => 'drop.update',
-          'uses' => 'App\Http\Controllers\PlaceController@dropEdit',
-        ]);
+        $api->patch('/drop/update/{id}','App\Http\Controllers\PlaceController@dropEdit');
 
 
     });

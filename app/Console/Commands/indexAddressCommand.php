@@ -51,7 +51,7 @@ class IndexAddressCommand extends Command
           'storage'   => '/var/www/html/ethikana/storage/custom/'
         ]);
         $indexer = $tnt->createIndex('places.index');
-        $indexer->query('SELECT id,new_address,alternate_address,uCode,area,postCode,subType,pType,city from places_3;');
+        $indexer->query('SELECT id,new_address,alternate_address,uCode,area,postCode,subType,pType,city,tags from places_3;');
         $indexer->run();
     /*    $candyShopIndexer = new TNTGeoIndexer;
         $candyShopIndexer->loadConfig([

@@ -21,12 +21,9 @@ class Place extends Model
         'device_ID',
         'uCode',
         'location',
-        'zone',
-        'ward',
-        'cc_code',
         'road_details',
         'number_of_floors',
-        'location',
+        'bounds',
         'contact_person_phone',
         'contact_person_name',
     ];

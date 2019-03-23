@@ -133,10 +133,12 @@ class PlaceController extends Controller
         $input->isRewarded = 1;
         if ($request->has('tags')){
           $tag = $this->insertTags($request->tags);
-          $input->tags = $tag;
+          $input->tags = $request->tags;
 
         }
+        $point = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
         $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+        $input->bounds = DB::raw("ST_Buffer($point, 1/11111)");
         $input->save();
         //$placeId=$input->id;
         //if image is there, in post request
@@ -212,7 +214,7 @@ class PlaceController extends Controller
         // Make your message
         $getuserData=User::where('id','=',$userId)->select('name')->first();
         $name=$getuserData->name;
-        $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($request->Address)."' near '".$request->area.",".$request->city."' area with Code:".$ucode." subType: ".$subType.", pType: ".$request->pType."")));
+        $message = array('payload' => json_encode(array('text' => "'".$name."' Added a Place: '".title_case($request->Address)."' near '".$request->area.", ".$request->city."' area with Code:".$ucode." subType: ".$subType.", pType: ".$request->pType."")));
         //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
         // Use curl to send your message
         $c = curl_init(SLACK_WEBHOOK);
@@ -303,7 +305,11 @@ class PlaceController extends Controller
       if ($request->has('contact_person_phone')){
         $input->contact_person_phone = $request->contact_person_phone;
       }
+      if ($request->has('tags')){
+        $tag = $this->insertTags($request->tags);
+        $input->tags = $tag;
 
+      }
       $input->uCode = $ucode;
       $input->isRewarded = 1;
       $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
@@ -393,43 +399,7 @@ class PlaceController extends Controller
       $res = curl_exec($c);
       curl_close($c);
 
-      //Give that guy 5 points.
-      //
-    /*  DB::select("INSERT IGNORE INTO places_last_cleaned SELECT * FROM places");
-    /  DB::select("INSERT IGNORE INTO places_3 (
-      id,
-      Address,
-      new_address,
-      alternate_address,
-      longitude,
-      latitude,
-      city,area,postCode,pType,subtype,flag,uCode,created_at,route_description)
-      SELECT id,Address,
-              CONCAT(Address,', ', area),
-              CONCAT(Address,' ', area),
-      		    longitude,
-              latitude,
-              city,area,postCode,pType,subtype,flag,uCode,created_at, route_description
-       FROM places_last_cleaned");
 
-      $c1 = DB::table('places_3')->where('flag',1)->orderBy('id','desc')->limit(1)->get();
-
-    /*  DB::connection('sqlite')->table('places_3')->insert([
-        'id'=>$c1->id,
-        'Address' => $c1->Address,
-        'new_address' => $c1->new_address,
-        'alternate_address' => $c1->alternate_address,
-        'longitude' => $c1->longitude,
-        'latitude' => $c1->latitude,
-        'city'=> $c1->city,
-        'area'=> $c1->area,
-        'postCode'=> $c1->postCode,
-        'pType' => $c1->pType,
-        'subType' => $c1->subType,
-        'flag' => $c1->uCode,
-        'create_at' => $c1->created_at,
-        'route_description' => $c1->route_description,
-      ]);*/
 
       User::where('id','=',$userId)->increment('total_points',5+$img_point);
       $getTheNewTotal=User::where('id','=',$userId)->select('total_points')->first();
@@ -511,6 +481,11 @@ class PlaceController extends Controller
         }
         if ($request->has('route_description')){
           $input->route_description = $request->route_description;
+        }
+        if ($request->has('tags')){
+          $tag = $this->insertTags($request->tags);
+          $input->tags = $tag;
+
         }
         $input->uCode = $request->uCode;
         $input->isRewarded = 1;
@@ -837,8 +812,17 @@ class PlaceController extends Controller
 
     public function getListViewItem($code)
     {
-      $place = Place::with('images')->where('uCode','=',$code)->first(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_name','contact_person_phone','road_details','route_description']);
-      return response()->json($place);
+      $place = DB::select("SELECT id, longitude,latitude,Address,city,area,postCode,pType,subType,uCode,contact_person_phone,tags,ST_AsGeoJSON(bounds) FROM places WHERE uCode = '$code' OR id = '$code'");
+    ///  $place = Place::with('images')->where('uCode','=',$code)->orWhere('id',$code)->first(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_name','contact_person_phone','road_details','route_description','tags']);
+      if (count($place)>0) {
+        return response()->json($place[0]);
+      }else {
+        return response()->json([
+          'message' => 'Not Found',
+          'status' => '200',
+        ]);
+      }
+
     }
 
 
@@ -1060,25 +1044,23 @@ class PlaceController extends Controller
     public function mucheFeliMyPlace(Request $request,$barikoiCode)
     {
       Place::where('uCode','=',$barikoiCode)->delete();
-      DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
-      DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
-      DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
-      //DB::table('places_2')->where('uCode','=', $barikoiCode)->delete();
-    /*  define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
-      // Make your message
-    //  $getuserData=User::where('id','=',$userId)->select('name')->first();
-    //  $name=$getuserData->name;
-      $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($barikoiCode)."' near '".$barikoiCode.",".$barikoiCode."' area with Code:".$barikoiCode."")));
-      //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
-      // Use curl to send your message
-      $c = curl_init(SLACK_WEBHOOK);
-      curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
-      curl_setopt($c, CURLOPT_POST, true);
-      curl_setopt($c, CURLOPT_POSTFIELDS, $message);
-      curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
-      $res = curl_exec($c);
-      curl_close($c);
-      */
+    //  DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
+    if (DB::table('placesf')->where('uCode', '=', $barikoiCode)->exists()) {
+      DB::table('placesf')->where('uCode','=', $barikoiCode)->delete();
+    }
+    //
+    define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+
+    $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED ".$barikoiCode.",".$barikoiCode."' area with Code:".$barikoiCode."")));
+    //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+    // Use curl to send your message
+    $c = curl_init(SLACK_WEBHOOK);
+    curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($c, CURLOPT_POST, true);
+    curl_setopt($c, CURLOPT_POSTFIELDS, $message);
+    curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+    $res = curl_exec($c);
+    curl_close($c);
       return response()->json('Place Deleted!');
 
     }
@@ -1088,9 +1070,7 @@ class PlaceController extends Controller
       $places = Place::where('uCode','=',$barikoicode)->first();
 
       define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
-      // Make your message
-    //  $getuserData=User::where('id','=',$userId)->select('name')->first();
-      //$name=$getuserData->name;
+
       $message = array('payload' => json_encode(array('text' => "'".$request->user()->name."' DELETED a Place: '".title_case($places->Address)."' near '".$barikoicode.",".$barikoicode."' area with Code:".$barikoicode."")));
       //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
       // Use curl to send your message
@@ -1102,11 +1082,11 @@ class PlaceController extends Controller
       $res = curl_exec($c);
       curl_close($c);
 
-      DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
-      DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
-      DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
+    //  DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
+      //DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
+      //DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
       $places->delete();
-      return response()->json('Done');
+      return response()->json('Deleted');
     }
 
     /*
@@ -1166,9 +1146,20 @@ class PlaceController extends Controller
       if ($request->has('number_of_floors')){
         $places->number_of_floors = $request->number_of_floors;
       }
+      if ($request->has('tags')){
+        if (is_array($request->tags)) {
+         return response()->json('invalid input');
+       }else {
+         $tag = $this->insertTags($request->tags);
+         $places->tags = $request->tags;
+       }
+
+      }
       if ($request->has('longitude') && $request->has('latitude')) {
         $places->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
-
+      }
+      if ($request->has('bounds')) {
+        $places->bounds = DB::raw("ST_GEOMFROMTEXT('POLYGON(($request->bounds))')");
       }
 
       $places->save();
@@ -1443,7 +1434,7 @@ class PlaceController extends Controller
       $lat = $request->latitude;
       $lon = $request->longitude;
 
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location), postCode,
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, uCode,contact_person_phone,ST_AsText(location), postCode,tags,
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1461,7 +1452,7 @@ class PlaceController extends Controller
       $lon = $request->longitude;
 
       $distance = 0.1;
-      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, postCode ,uCode,contact_person_phone,contact_person_name,ST_AsText(location)
+      $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters, longitude,latitude,Address,city,area,pType,subType, postCode ,uCode,contact_person_phone,contact_person_name,tags,ST_AsText(location)
       FROM places
       WHERE ST_Contains( ST_MakeEnvelope(
         Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1714,18 +1705,18 @@ class PlaceController extends Controller
                 }
                 public function dropEdit(Request $request,$id)
                 {
-                  if (($request->user()->id)===1 || ($request->user()->id)===12 || ($request->user()->id)===17 || ($request->user()->id)===320 ) {
+                  if (($request->user()->id)===1 || ($request->user()->id)===12 || ($request->user()->id)===17 || ($request->user()->id)===320 || ($request->user()->id)===1111 || ($request->user()->id)===1222 || ($request->user()->id)===1279 || ($request->user()->id)===1276  ) {
                     $place = Place::findOrFail($id);
                     $place->longitude = $request->longitude;
                     $place->latitude = $request->latitude;
                     $place->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
                     $place->save();
 
-                    $placef = DB::table('placesf')->where('id',$id)->first();
-                    $placef->longitude = $request->longitude;
-                    $placef->latitude = $request->latitude;
-                    $placef->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
-                    return response()->json(['Message '=>' Updated']);
+                    // $placef = DB::table('placesf')->where('id',$id)->first();
+                    // $placef->longitude = $request->longitude;
+                    // $placef->latitude = $request->latitude;
+                    // $placef->location = DB::raw("ST_GEOMFROMTEXT('POINT($request->longitude $request->latitude)')");
+                     return response()->json(['Message '=>' Updated']);
                   }else {
                     return response()->json(['Message '=>' Not Permitted']);
                   }
@@ -1787,8 +1778,7 @@ class PlaceController extends Controller
                   $lat = $request->latitude;
                   $lon = $request->longitude;
                   $distance = 0.1;
-                  //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, contact_person_phone,ST_AsText(location)
+                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, postCode,contact_person_phone,ST_AsText(location)
                   FROM places
                   WHERE ST_Contains( ST_MakeEnvelope(
                     Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1921,22 +1911,6 @@ class PlaceController extends Controller
 
               return $result;
             }
-            public function Getdistance($SourceLon,$SourceLat,$DestinationLon,$DestinationLat)
-            {
-              $lon1 = $SourceLon;
-              $lon2 = $DestinationLon;
-              $lat = $SourceLat;
-              $lat2 = $DestinationLat;
-              $client = new Client();
-              $result = $client->request('GET', 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='.$lat.','.$lon1.'&destinations='.$lat2.','.$lon2.'&key=AIzaSyCMFVbYCGFzRmWfKuKlkDSzwT4azYrNdmM');
-              $result = $result->getBody();
-
-              return $result;
-            }
-
-
-
-
 
             // get ward
 
@@ -1988,14 +1962,14 @@ class PlaceController extends Controller
 
           $totalSearch = analytics::select('search_count')->get();
           $totalCount = DB::connection('sqlite')->table('places_3')->select('id')->count();
-          $publicCount = DB::connection('sqlite')->table('places_3')->where('flag',1)->count();
-          $privateCount = DB::connection('sqlite')->table('places_3')->where('flag',0)->count();
+        //  $publicCount = DB::connection('sqlite')->table('places_3')->where('flag',1)->count();
+        //  $privateCount = DB::connection('sqlite')->table('places_3')->where('flag',0)->count();
 
 
           return response()->json([
             'Total Code' =>$totalCount,
-            'Public Code' => $publicCount,
-            'Private Code' => $privateCount,
+          //  'Public Code' => $publicCount,
+          //  'Private Code' => $privateCount,
             'search_count' => $totalSearch,
             //  'Duplicates'   => $y,
             'Todays' => $data,
@@ -2044,9 +2018,9 @@ class PlaceController extends Controller
           //$placesWithDvid=Place::where('device_ID','=',$deviceId)->where('user_id', null)->update(['user_id' => $userId]);
           //get the places with user id only
           if ($request->has('limit')) {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit($request->limit)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name','tags']);
           }else {
-            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name']);
+            $place = Place::where('user_id','=',$userId)->orderBy('id', 'DESC')->limit(1000)->get(['id','Address','longitude','latitude','pType','subType','uCode', 'area','city','postCode','contact_person_phone','contact_person_name','tags']);
           }
 
           return $place->toJson();
@@ -2068,7 +2042,7 @@ class PlaceController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $userId = $user->id;
             //get the places with user id only
-            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','postCode','uCode', 'area','city','contact_person_phone','contact_person_name']);
+            $place = Place::with('images')->where('user_id','=',$userId)->get(['id','Address','longitude','latitude','pType','subType','postCode','uCode', 'area','city','contact_person_phone','contact_person_name','tags']);
             return response()->json($place);
             //return $deviceId;
           }
@@ -2158,19 +2132,50 @@ class PlaceController extends Controller
 
           public function insertTags($tags)
           {
-            /*$rules = [
+            if (DB::table('tags')->where('tags', '=', $tags)->exists()) {
+              $tag=DB::table('tags')->where('tags', '=', $tags)->get(['tags']);
 
-              'tags' => 'unique:tags|max:255',
+              return $tag;
 
-            ];
-            $validator = Validator::make($request->all(), $rules,'tag is not unique');*/
-            $tag = new tags;
-            $tag->tags = $tags;
-            $tag->save();
+            }else{
+              $tag = new tags;
+              $tag->tags = $tags;
+              $tag->save();
+              return $tags;
+            }
 
-            return $tags;
+
+
           }
+          public function GetTags(Request $request)
+          {
+            $tag = DB::table('tags')->where('tags','LIKE','%'.$request->tags.'%')->get(['tags']);
 
+            return response()->json([
+              'tags'=> $tag,
+              'status' =>'200'
+            ]);
+          }
+          public function addNewFiletoindex()
+          {
+            $place = DB::table('places')->orderBy('created_at','desc')->first();
+            $tnt = new TNTSearch;
+
+           $tnt->loadConfig([
+               'driver'    => 'mysql',
+               'host'      => 'localhost',
+               'database'  => 'ethikana',
+               'username'  => 'root',
+               'password'  => 'root',
+               'storage'   => '/var/www/html/ethikana/storage/custom/'
+           ]);
+            $tnt->selectIndex("places.index");
+
+            $index = $tnt->getIndex();
+
+            //to insert a new document to the index
+            $index->insert(['id' => '11', 'title' => 'new title', 'article' => 'new article']);
+          }
 
 
 

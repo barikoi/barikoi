@@ -679,7 +679,7 @@ public function is_base64($apikey)
 }
 public function getUrl()
 {
-  return 'https://api.barikoi.xyz/v1/tnt/search/test';
+  return 'https://barikoi.xyz/v1/tnt/search/test';
 }
 
 
