@@ -42,14 +42,14 @@ class IndexAddressCommand extends Command
     public function handle()
     {
       $tnt = new TNTSearch;
-       $tnt->loadConfig([
+      $tnt->loadConfig([
           'driver'    => 'mysql',
-          'host'      => 'localhost',
+          'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
           'database'  => 'ethikana',
-          'username'  => 'root',
-          'password'  => 'root',
+          'username'  => 'dbmasteruser',
+          'password'  => 'Amitayef5.7barikoi1216',
           'storage'   => '/var/www/html/ethikana/storage/custom/'
-        ]);
+      ]);
         $indexer = $tnt->createIndex('places.index');
         $indexer->query('SELECT id,new_address,alternate_address,uCode,area,postCode,subType,pType,city,tags from places_3;');
         $indexer->run();

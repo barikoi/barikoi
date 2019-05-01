@@ -11,6 +11,7 @@ use App\User;
 use App\Area;
 use App\Place;
 use App\NewPlace;
+use App\StructuredPlace;
 use App\PlaceType;
 use App\PlaceSubType;
 use App\SavedPlace;
@@ -95,11 +96,12 @@ class PlaceController extends Controller
         $input->pType = $request->pType;
         $input->subType = $subType;
         //longitude,latitude,Address,city,area,postCode,pType,subType,flag,device_ID,user_id,email
-        if($request->has('flag'))
-        {
-          $input->flag = $request->flag;
-
-        }
+        // if($request->has('flag'))
+        // {
+        //
+        //
+        // }
+          $input->flag = 1;
         if($request->has('device_ID')) {
           $input->device_ID = $request->device_ID;
         }
@@ -140,6 +142,8 @@ class PlaceController extends Controller
         $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
         $input->bounds = DB::raw("ST_Buffer($point, 1/11111)");
         $input->save();
+
+        $this->AddStructuredData($request,$ucode);
         //$placeId=$input->id;
         //if image is there, in post request
         $message1='no image file attached.';
@@ -418,6 +422,149 @@ class PlaceController extends Controller
       ]);
 
     }
+
+    public function AddStructuredData(Request $request, $ucode)
+    {
+
+      $lat = $request->latitude;
+      $lon = $request->longitude;
+      //	$location = ''.$lon.' '.$lat.'';
+      $input = new StructuredPlace;
+      $input->longitude = $lon;
+      $input->latitude = $lat;
+      //$input->Address = title_case(ltrim($request->Address," "));
+      if ($request->has('name')){
+        $input->name = $request->name;
+      }
+      if ($request->has('holding_no')){
+        $input->holding_no = $request->holding_no;
+      }
+      if ($request->has('localName')){
+        $input->localName = $request->localName;
+      }
+      if ($request->has('alternativeName')){
+        $input->alternativeName = $request->alternativeName;
+      }
+      if ($request->has('road_name_number')){
+        $input->road_name_number = $request->road_name_number;
+      }
+      if ($request->has('super_sub_area')){
+        $input->super_sub_area = $request->super_sub_area;
+      }
+      if ($request->has('sub_area')){
+        $input->sub_area = $request->sub_area;
+      }
+      $input->city = title_case($request->city);
+      $input->area = title_case(trim($request->area," "));
+      $input->postCode = $request->postCode;
+      $input->pType = $request->pType;
+      $input->subType = $request->subType;
+      //longitude,latitude,Address,city,area,postCode,pType,subType,flag,device_ID,user_id,email
+      if($request->has('flag'))
+      {
+        $input->flag = 1;
+
+      }
+      $input->user_id =$request->user()->id;
+
+      if ($request->has('email')){
+        $input->email = $request->email;
+      }
+
+      if ($request->has('number_of_floors')){
+        $input->number_of_floors = $request->number_of_floors;
+      }
+      if ($request->has('contact_person_name')){
+        $input->contact_person_name = $request->contact_person_name;
+      }
+      if ($request->has('contact_person_phone')){
+        $input->contact_person_phone = $request->contact_person_phone;
+      }
+      $input->uCode = $ucode;
+      if ($request->has('tags')){
+        $tag = $this->insertTags($request->tags);
+        $input->tags = $request->tags;
+
+      }
+      $point = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->bounds = DB::raw("ST_Buffer($point, 1/11111)");
+      $input->save();
+
+      //return response()->json('Added');
+    }
+
+
+    public function AddDSCCData(Request $request)
+    {
+      $randomStringChar=$this->generateRandomString(4);
+      //number part
+      $charactersNum = '0123456789';
+      $charactersNumLength = strlen($charactersNum);
+      $randomStringNum = '';
+      for ($i = 0; $i < 4; $i++) {
+        $randomStringNum .= $charactersNum[rand(0, $charactersNumLength - 1)];
+      }
+
+      $ucode =  ''.$randomStringChar.''.$randomStringNum.'';
+
+      $lat = $request->latitude;
+      $lon = $request->longitude;
+      //	$location = ''.$lon.' '.$lat.'';
+      $input = new StructuredPlace;
+      $input->longitude = $lon;
+      $input->latitude = $lat;
+      //$input->Address = title_case(ltrim($request->Address," "));
+      if ($request->has('name')){
+        $input->name = $request->name;
+      }
+      if ($request->has('holding_no')){
+        $input->holding_no = $request->holding_no;
+      }
+
+      if ($request->has('road_name_number')){
+          $input->road_name_number = $request->road_name_number;
+      }
+
+      if ($request->has('area')){
+        $input->area = $request->area;
+      }
+      // if ($request->has('super_sub_area')){
+      //   $input->road_name_number = $request->road_name_number;
+      // }
+      // if ($request->has('sub_area')){
+      //   $input->road_name_number = $request->road_name_number;
+      // }
+      if ($request->has('ward')){
+        $input->ward = $request->ward;
+      }
+      if ($request->has('zone')){
+        $input->zone = $request->zone;
+      }
+      $input->city = 'Dhaka';
+      $input->area = title_case(trim($request->area," "));
+      if ($request->has('postCode')) {
+        $input->postCode = $request->postCode;
+      }
+
+      $input->pType = 'Residential';
+      $input->subType ='House';
+      $input->flag = 1;
+
+      $input->user_id =$request->user()->id;
+
+      $input->uCode = $ucode;
+
+      $point = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->bounds = DB::raw("ST_Buffer($point, 1/11111)");
+      $input->save();
+
+      //return response()->json('Added');
+    }
+
+
+
 
     //*******ADD PLACE with CUSTOM CODE************************
     //Add new place with custom code
@@ -1022,13 +1169,20 @@ class PlaceController extends Controller
     }
 
     // fetch all data
-    public function shobaix()
+    public function shobaix(Request $request)
     {
-      //$places = Place::all()
-      $today = Carbon::today()->toDateTimeString();
-      $places = Place::with('images')->whereDate('created_at','=',$today)->get(['id','Address','area','longitude','latitude','pType','subType','uCode','created_at']);
-
+      if ($request->has('dateFrom') && $request->has('dateTill')) {
+        $Places = Place::whereBetween('created_at',[$request->dateFrom,$request->dateTill])->get(['id','Address','area','pType','subType','longitude','latitude','uCode','user_id','created_at']);
+        return new JsonResponse([
+            'Message' => $Places,
+          ],200);
+        }
+      else {
+        $today = Carbon::today()->toDateTimeString();
+        $places = Place::whereDate('created_at','=',$today)->get(['id','Address','area','longitude','latitude','pType','subType','uCode','created_at']);
+      //  $Updatedplaces = Place::whereDate('updated_at','=',$today)->get(['id','Address','area','longitude','latitude','pType','subType','uCode','updated_at']);
       return response()->json($places);
+        }
     }
     //Test paginate
     public function shobaiTest()
@@ -1043,10 +1197,20 @@ class PlaceController extends Controller
     */
     public function mucheFeliMyPlace(Request $request,$barikoiCode)
     {
-      Place::where('uCode','=',$barikoiCode)->delete();
+
+      // $x =DB::select("SELECT * FROM places where uCode = $barikoiCode");
+
+       Place::where('uCode','=',$barikoiCode)->delete();
+       DB::select("INSERT
+         INTO deleted_places
+         SELECT *
+         FROM places where uCode = '$barikoiCode'");
     //  DB::table('places_last_cleaned')->where('uCode','=', $barikoicode)->delete();
     if (DB::table('placesf')->where('uCode', '=', $barikoiCode)->exists()) {
       DB::table('placesf')->where('uCode','=', $barikoiCode)->delete();
+    }
+    if (DB::table('StructuredPlaces')->where('uCode', '=', $barikoiCode)->exists()) {
+      DB::table('StructuredPlaces')->where('uCode','=', $barikoiCode)->delete();
     }
     //
     define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
@@ -1067,7 +1231,16 @@ class PlaceController extends Controller
 
     public function mucheFeli(Request $request,$barikoicode)
     {
+      DB::select("INSERT
+        INTO deleted_places
+        SELECT *
+        FROM places where places.uCode = '$barikoicode'");
+      $email = $request->user()->email;
+      DB::select("UPDATE deleted_places set email = '$email' where uCode = '$barikoicode'");
       $places = Place::where('uCode','=',$barikoicode)->first();
+      if (DB::table('StructuredPlaces')->where('uCode', '=', $barikoicode)->exists()) {
+        DB::table('StructuredPlaces')->where('uCode','=', $barikoicode)->delete();
+      }
 
       define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
 
@@ -1086,6 +1259,9 @@ class PlaceController extends Controller
       //DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
       //DB::table('placesMaster')->where('uCode','=', $barikoicode)->delete();
       $places->delete();
+      if (DB::table('placesf')->where('uCode', '=', $barikoicode)->exists()) {
+        DB::table('placesf')->where('uCode','=', $barikoicode)->delete();
+      }
       return response()->json('Deleted');
     }
 
@@ -1163,6 +1339,9 @@ class PlaceController extends Controller
       }
 
       $places->save();
+      if (DB::table('StructuredPlaces')->where('uCode','=',$id)->orWhere('id',$id)->exists()) {
+        $this->AddStructuredData($request,$id);
+      }
 
       if ($request->has('images'))
       {
@@ -1248,6 +1427,73 @@ class PlaceController extends Controller
 
       return response()->json(['message' => 'Updated', 'status code'=> '200']);
 
+    }
+    public function updateStructuredAddress(Request $request,$id)
+    {
+      $input = StructuredPlace::where('uCode','=',$id)->orWhere('id',$id)->first();
+      $lat = $request->latitude;
+      $lon = $request->longitude;
+
+      if ($request->has('name')){
+        $input->name = $request->name;
+      }
+      if ($request->has('holding_no')){
+        $input->holding_no = $request->holding_no;
+      }
+      if ($request->has('localName')){
+        $input->localName = $request->localName;
+      }
+      if ($request->has('alternativeName')){
+        $input->alternativeName = $request->alternativeName;
+      }
+      if ($request->has('road_name_number')){
+        $input->road_name_number = $request->road_name_number;
+      }
+      if ($request->has('super_sub_area')){
+        $input->super_sub_area = $request->super_sub_area;
+      }
+      if ($request->has('sub_area')){
+        $input->sub_area = $request->sub_area;
+      }
+      if ($request->has('city')) {
+        $input->city = title_case($request->city);
+      }
+      if ($request->has('area')) {
+        $input->area = title_case(trim($request->area," "));
+      }
+      if ($request->has('postCode')) {
+        $input->postCode = $request->postCode;
+      }
+      if ($request->has('pType')) {
+        $input->pType = $request->pType;
+      }
+      if ($request->has('subType')) {
+        $input->subType = $request->subType;
+      }
+      if($request->has('flag'))
+      {
+        $input->flag = 1;
+
+      }
+      $input->user_id =$request->user()->id;
+
+      if ($request->has('email')){
+        $input->email = $request->email;
+      }
+
+      if ($request->has('number_of_floors')){
+        $input->number_of_floors = $request->number_of_floors;
+      }
+      if ($request->has('contact_person_name')){
+        $input->contact_person_name = $request->contact_person_name;
+      }
+      if ($request->has('contact_person_phone')){
+        $input->contact_person_phone = $request->contact_person_phone;
+      }
+      $point = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->location = DB::raw("ST_GEOMFROMTEXT('POINT($lon $lat)')");
+      $input->bounds = DB::raw("ST_Buffer($point, 1/11111)");
+      $input->save();
     }
     //update
     public function halnagad(Request $request,$barikoicode){
@@ -1736,41 +1982,41 @@ class PlaceController extends Controller
                 }
 
                 /*Export Data*/
-                public function export($id){
-                  $today = Carbon::today()->toDateTimeString();
-                  $lastsixday = Carbon::today()->subDays(6);
-                  $places=Place::where('user_id',$id)->whereBetween('created_at',[$lastsixday,$today])->get(['id','Address','area','postCode','pType','subType','created_at']);
-                  Excel::create(''.$id.'', function($excel) use ($places) {
-                    $excel->sheet('ExportPlaces', function($sheet) use ($places) {
-                      $sheet->fromArray($places);
-                    });
-                  })->export('xls');
+                // public function export($id){
+                //   $today = Carbon::today()->toDateTimeString();
+                //   $lastsixday = Carbon::today()->subDays(6);
+                //   $places=Place::where('user_id',$id)->whereBetween('created_at',[$lastsixday,$today])->get(['id','Address','area','postCode','pType','subType','created_at']);
+                //   Excel::create(''.$id.'', function($excel) use ($places) {
+                //     $excel->sheet('ExportPlaces', function($sheet) use ($places) {
+                //       $sheet->fromArray($places);
+                //     });
+                //   })->export('xls');
+                //
+                // }
+                // // public function exportDataIdWise(Request $request){
+                //   $start = $request->start;
+                //   $end = $request->end;
+                //
+                //   $places=Place::whereBetween('id',[$start,$end])->get();
+                //   Excel::create(''.$end.'', function($excel) use ($places) {
+                //     $excel->sheet('ExportPlaces', function($sheet) use ($places) {
+                //       $sheet->fromArray($places);
+                //     });
+                //   })->export('xls');
+                //
+                // }
 
-                }
-                public function exportDataIdWise(Request $request){
-                  $start = $request->start;
-                  $end = $request->end;
-
-                  $places=Place::whereBetween('id',[$start,$end])->get();
-                  Excel::create(''.$end.'', function($excel) use ($places) {
-                    $excel->sheet('ExportPlaces', function($sheet) use ($places) {
-                      $sheet->fromArray($places);
-                    });
-                  })->export('xls');
-
-                }
-
-                public function exportToday(){
-                  $today = Carbon::today()->toDateTimeString();
-                  $lastsixday = Carbon::today()->subDays(6);
-                  $places=Place::whereDate('created_at',$today)->get(['id','Address','area','postCode','pType','subType','created_at']);
-                  Excel::create(''.$today.'', function($excel) use ($places) {
-                    $excel->sheet('ExportPlaces', function($sheet) use ($places) {
-                      $sheet->fromArray($places);
-                    });
-                  })->export('xls');
-
-                }
+                // public function exportToday(){
+                //   $today = Carbon::today()->toDateTimeString();
+                //   $lastsixday = Carbon::today()->subDays(6);
+                //   $places=Place::whereDate('created_at',$today)->get(['id','Address','area','postCode','pType','subType','created_at']);
+                //   Excel::create(''.$today.'', function($excel) use ($places) {
+                //     $excel->sheet('ExportPlaces', function($sheet) use ($places) {
+                //       $sheet->fromArray($places);
+                //     });
+                //   })->export('xls');
+                //
+                // }
 
               public function reverseGeocode(Request $request)
               {
@@ -1778,7 +2024,7 @@ class PlaceController extends Controller
                   $lat = $request->latitude;
                   $lon = $request->longitude;
                   $distance = 0.1;
-                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, postCode,contact_person_phone,ST_AsText(location)
+                  $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType,uCode, postCode,contact_person_phone,ST_AsText(location), ST_AsGeoJSON(bounds)
                   FROM places
                   WHERE ST_Contains( ST_MakeEnvelope(
                     Point(($lon+($distance/111)), ($lat+($distance/111))),
@@ -1788,7 +2034,12 @@ class PlaceController extends Controller
                   if (count($result)>0) {
                     return response()->json($result);
                   }
+
                   else {
+                    $result = DB::select("SELECT longitude,latitude,pType,Address,area,city,subType,uCode, contact_person_phone,ST_ASTEXT(bounds) FROM places WHERE ST_Contains(places.bounds, ST_GEOMFROMTEXT('POINT($lon $lat)')) LIMIT 1");
+                     if (count($result)>0) {
+                       return response()->json($result);
+                     }else {
                     $road = DB::select("SELECT road_name_number from roads where ST_Distance(road_geometry,POINT($lon,$lat))<20/11114");
                     if (count($road)>0) {
                       return new JsonResponse([
@@ -1804,7 +2055,7 @@ class PlaceController extends Controller
                          'distance_in_meters' => 0,
                          'contact_person_name' => 'N/A',
                          'ST_AsText(location)' => 'N/A',
-                         'Data Source' => 'OpenstreetMap'
+                         'Data Source' => 'Barikoi Roads'
                        ],
                       ]);
                     }else {
@@ -1832,6 +2083,7 @@ class PlaceController extends Controller
                         ]);
                       }
                     }
+                  }
 
 
             }
@@ -1841,8 +2093,7 @@ class PlaceController extends Controller
               $lat = $latitude;
               $lon = $longitude;
               $distance = 0.2;
-              //$result = DB::select("SELECT id, slc($lat, $lon, y(location), x(location))*10000 AS distance_in_meters, Address,area,longitude,latitude,pType,subType, astext(location) FROM places_2 WHERE MBRContains(envelope(linestring(point(($lat+(0.2/111)), ($lon+(0.2/111))), point(($lat-(0.2/111)),( $lon-(0.2/111))))), location) order by distance_in_meters LIMIT 1");
-              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location)
+              $result = DB::select("SELECT id, ST_Distance_Sphere(Point($lon,$lat), location) as distance_in_meters,longitude,latitude,pType,Address,area,city,subType, ST_AsText(location), ST_AsGeoJSON(bounds)
               FROM places
               WHERE ST_Contains( ST_MakeEnvelope(
                 Point(($lon+($distance/111)), ($lat+($distance/111))),

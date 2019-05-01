@@ -566,13 +566,9 @@ function SearchString($text, $pattern, $k)
     	return $result;
 }
 
-public function osm($apikey,$start,$destination)
+public function osm($start,$destination)
 {
-  $key = base64_decode($apikey);
-  $bIdAndKey = explode(':', $key);
-  $bUser=$bIdAndKey[0];
-  $bKey=$bIdAndKey[1];
-  if (Token::where('user_id','=',$bUser)->where('randomSecret','=',$bKey)->where('isActive',1)->exists()) {
+
   //$str = DB::table('places_3')->limit(20)->get(['Address']);
   $client = new \GuzzleHttp\Client();
   $res = $client->request('GET', 'http://map.barikoi.xyz:5000/route/v1/car/'.$start.';'.$destination.'');
@@ -584,12 +580,7 @@ public function osm($apikey,$start,$destination)
   $data = $data/1000;
   return response()->json(['Distance'=> $data.' KM']);
   //return redirect('https://13.250.61.233/osm_tiles/{z}/{x}/{y}.png');
- }
- else{
-   return new JsonResponse([
-     'message' => 'Invalid or No Regsitered Key',
-   ]);
- }
+
 }
 
 public function osmMap()

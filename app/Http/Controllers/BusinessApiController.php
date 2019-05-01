@@ -588,7 +588,7 @@ public function geocode($apikey,$id)
       //  if (is_int($id)) {
 
       $place = Place::where('id',$id)->orWhere('uCode',$id)->get(['Address','area','city','postCode','uCode','longitude','latitude','pType','subType']);
-      DB::table('tokens')->where('user_id','=',$bUser)->increment('geo_code_count',10);
+      DB::table('tokens')->where('user_id','=',$bUser)->increment('geo_code_count',1);
       // decrease count in autocomplete count
       if (count($place)>0) {
         return $place->toJson();
@@ -930,7 +930,7 @@ public function totalApiUser()
 
 public function developerAnalytics()
 {
-  $total = Token::all();
+  $total = DB::table('tokens')->join('users','tokens.user_id','=','users.id')->select('users.name','tokens.*')->get();
 
   return response()->json([
     'usage' => $total,

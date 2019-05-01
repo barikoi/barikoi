@@ -116,8 +116,7 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
 
   $api->get('/web/search/{nameorcode}','App\Http\Controllers\PlaceController@searchNameAndCodeWeb');
 
-  //App\Http\Controllers\SearchController@index
-  //App\Http\Controllers\PlaceController@searchNameAndCodeWeb
+
 /// Get place type and subtype
   $api->get('/place/get/sub/type/{type}/','App\Http\Controllers\PlaceController@getPlaceSubType');
 
@@ -220,6 +219,7 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
       $api->post('/tnt/search','App\Http\Controllers\SearchController@testSearchthree');
 
 
+
       $api->get('get/area','App\Http\Controllers\DataController@getArea');
 
 
@@ -231,10 +231,13 @@ $api->get('reverse/without/auth','App\Http\Controllers\PlaceController@reverseGe
     $api->get('area/polygon','App\Http\Controllers\DataController@getAreaDataPolygonWise');
 
     /// This search is used in current app and every other internal search
+      $api->post('/search/geocode/web/{id}','App\Http\Controllers\SearchController@GeoCode');
+    $api->post('/search/autocomplete/web','App\Http\Controllers\SearchController@SearchAutocompleteWeb');
     $api->post('/tnt/search/test','App\Http\Controllers\SearchController@testSearchthree');
     $api->post('/tnt/search/two','App\Http\Controllers\SearchController@testSearchtwo');
     $api->post('/tnt/search/admin','App\Http\Controllers\SearchController@searchAdmin');
     $api->post('/tnt/search/elastic/{q}','App\Http\Controllers\SearchController@elasticSearch');
+    $api->post('/search/batch','App\Http\Controllers\SearchController@batchGeo');
 
 
     $api->get('get/area/by/polygon','App\Http\Controllers\DataController@getAreaByPolygon');

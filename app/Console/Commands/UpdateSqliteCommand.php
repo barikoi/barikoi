@@ -37,20 +37,20 @@ class UpdateSqliteCommand extends Command
      */
     public function handle()
     {
-      $startTimer = microtime(true);
+    //  $startTimer = microtime(true);
       $this->line("\nEmptying the database for you . . . ");
       DB::connection('sqlite')->table('places_3')->where('Address','LIKE','%%')->delete();
 
       $c1 = DB::table('places_3')->where('flag',1)->get();
       $this->line("\nInserting the database for you . . . ");
-      $count = 0;
+      $count = 1000;
       foreach($c1 as $record){
 
         DB::connection('sqlite')->table('places_3')->insert(get_object_vars($record));
         $this->line("\n"+$count++);
 
       }
-      $stopTimer = microtime(true);
+    //  $stopTimer = microtime(true);
       $this->line("\nDone!!");
 
 

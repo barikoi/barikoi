@@ -770,20 +770,20 @@ public function testSearchthree(Request $request)
 
     $tnt->loadConfig([
         'driver'    => 'mysql',
-        'host'      => 'localhost',
+        'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
         'database'  => 'ethikana',
-        'username'  => 'root',
-        'password'  => 'root',
+        'username'  => 'dbmasteruser',
+        'password'  => 'Amitayef5.7barikoi1216',
         'storage'   => '/var/www/html/ethikana/storage/custom/'
     ]);
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
-    //$tnt->asYouType = true;
-
+    $tnt->asYouType = true;
+    $message = 'someone searched "'.$request->search.'" from web ';
+    $this->SlackSearch($message);
     if ($request->has('search')) {
       $q = strtolower($request->search);
-
       if ($place = Redis::get($q)) {
         $place = json_decode($place);
         return response()->Json([
@@ -792,25 +792,34 @@ public function testSearchthree(Request $request)
           'source' => 'Cache'
         ]);
       }
-      $place = $this->elasticSearch($q);
-      if (count($place)>0) {
-         return response()->json(['source' => 'Elastic','places'=>$place]);
-      }else{
-       $place = $this->linearsearch($q);
+      $res = DB::connection('sqlite')->table('places_3')->where('Address','=',$q)->get(['id','Address','new_address','alternate_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+      if (isset($res[0]) && $this->isExactMatch($request, $res[0])) {
+          Redis::setex($q, 60*24,$res[0]);
+          return response()->json( [
+              'places'       => $res[0],
+              'Souce' => 'exact match'
+          ]);
+      }
+
+
+        // $place = $this->elasticSearch($q);
+        // if (count($place)>0) {
+        //    //Redis::setex($q, 60,$place);
+        //    return response()->json(['source' => 'Elastic','places'=>$place]);
+        // }else{
+        $place = $this->linearsearch($q);
        if (count($place)>0) {
-          Redis::setex($q, 60*60*24,$place);
+          Redis::setex($q, 60*24,$place);
          return response()->json(['Source'=> 'sqlite','q'=> $q,'places'=>$place ]);
        }else {
          $q = preg_replace("/[(^)]/", " ",$q);
          $q = preg_replace('/\s+/', ' ',$q);
          $q = str_replace(",","",$q);
-
-
-         $place = $this->linearsearch($q);
+         $place = $this->linearsearchlong($q);
 
         if (count($place)>0) {
-            Redis::setex($q, 60*60*24,$place);
-           return response()->json(['q'=>$q,'Source'=> 'sqlite','places'=>$place ]);
+            Redis::setex($q, 60*1,$place);
+           return response()->json(['q'=>$q,'Source'=> 'sqlite long','places'=>$place ]);
          }else {
            $place = $this->uCodeSearch($q);
            if (count($place)>0) {
@@ -826,7 +835,7 @@ public function testSearchthree(Request $request)
              if (count($res['ids'])>0) {
 
                $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
-               Redis::setex($q, 60*60*24,$place);
+              // Redis::setex($q, 60*1,$place);
                return response()->json(['Q tnt search'=>$q ,'places' => $place]);
              }else{
                $q = preg_replace("/[\/,-]/", " ", $q);
@@ -840,7 +849,7 @@ public function testSearchthree(Request $request)
                }
                if (count($res['ids'])>0) {
                   $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
-                  Redis::setex($q, 60*60*24,$place);
+                //  Redis::setex($q, 60*1,$place);
                   return response()->json(['y'=> $y,'places' => $place]);
                 }else {
 
@@ -850,11 +859,15 @@ public function testSearchthree(Request $request)
                   $res = $tnt->search($q,10);
                   if (count($res['ids'])>0) {
                     $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
-                    Redis::setex($q, 60*60*24,$place);
+                  //  Redis::setex($q, 60*1,$place);
                     return response()->json(['String' => $q,'places' => $place, 'Source'=>'TNT']);
                   }
                   else {
 
+                    $place = $this->elasticSearch($q);
+                    if (count($place)>0) {
+                       return response()->json(['source' => 'Elastic','places'=>$place]);
+                    }else{
                     DB::table('Searchlytics')->insert(['query' => $q]);
                     return response()->json([
                       'message' => 'not found',
@@ -878,27 +891,93 @@ public function testSearchthree(Request $request)
      }
 
   }
+public function batchGeo(Request $request)
+{
+  $fuzzy_prefix_length  = 2;
+  $fuzzy_max_expansions = 50;
+  $fuzzy_distance       = 3;
+  $tnt = new TNTSearch;
+  $q = $request->search;
+  $x = explode(",",$q);
+
+
+ $tnt->loadConfig([
+     'driver'    => 'mysql',
+     'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
+     'database'  => 'ethikana',
+     'username'  => 'dbmasteruser',
+     'password'  => 'Amitayef5.7barikoi1216',
+     'storage'   => '/var/www/html/ethikana/storage/custom/'
+ ]);
+  $res = DB::connection('sqlite')->table('places_3')->where('Address','=',$x[0])->get(['id','Address','new_address','alternate_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+  if (isset($res[0]) && $this->isExactMatch($request, $res[0])) {
+      return response()->json( [
+          'places'       => $res[0],
+          'Souce' => 'exact match'
+      ]);
+  }
+  $places = $this->linearsearch($x[0]);
+  if (isset($places[0])) {
+    return response()->json([
+        'places'       => $places[0],
+        'Souce' => 'sqlite'
+    ]);
+  }
+    $places = $this->linearsearchlong($x[0]);
+  if (isset($places[0])) {
+    return response()->json([
+        'places'       => $places[0],
+        'Souce' => 'sqlite all match'
+    ]);
+  }
+  $tnt->selectIndex("places.index");
+  $tnt->fuzziness = true;
+  $tnt->asYouType = true;
+//  $q = preg_replace("/[(^)]/", " ",$q);
+  $res = $tnt->searchBoolean($x[0],10);
+  if (count($res['ids'])>0) {
+    $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+    return response()->json(['Q tnt search'=>$request->search ,'places' => $place[0]]);
+  }
+  $places=$this->linearsearchLocate($request->search);
+  if (count($places)>0) {
+    return response()->json([
+        'places'       => $places,
+        'Souce' => 'locate'
+    ]);
+  }
+  else {
+    return response()->json([
+        'Message'       => 'Not Found',
+
+    ]);
+  }
+
+}
 
 /// autocomplete
 public function SearchAutocomplete(Request $request)
    {
+     $user = $request->user()->name;
      $fuzzy_prefix_length  = 2;
      $fuzzy_max_expansions = 50;
      $fuzzy_distance       = 3;
      $tnt = new TNTSearch;
 
-    $tnt->loadConfig([
-        'driver'    => 'mysql',
-        'host'      => 'localhost',
-        'database'  => 'ethikana',
-        'username'  => 'root',
-        'password'  => 'root',
-        'storage'   => '/var/www/html/ethikana/storage/custom/'
-    ]);
+     $tnt->loadConfig([
+         'driver'    => 'mysql',
+         'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
+         'database'  => 'ethikana',
+         'username'  => 'dbmasteruser',
+         'password'  => 'Amitayef5.7barikoi1216',
+         'storage'   => '/var/www/html/ethikana/storage/custom/'
+     ]);
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
     //$tnt->asYouType = true;
+    $message = ''.$user.' searched '.$request->search.' from app ';
+    $this->SlackSearch($message);
 
     if ($request->has('search')) {
       $q = strtolower($request->search);
@@ -913,6 +992,7 @@ public function SearchAutocomplete(Request $request)
       }
       $place = $this->elasticSearch($q);
       if (count($place)>0) {
+
          return response()->json(['source' => 'Elastic','places'=>$place]);
       }else{
         $place = DB::connection('sqlite')->table('places_3')
@@ -1003,6 +1083,136 @@ public function SearchAutocomplete(Request $request)
 
   }
 
+  public function SearchAutocompleteWeb(Request $request)
+     {
+       //$user = $request->user()->name;
+       $fuzzy_prefix_length  = 2;
+       $fuzzy_max_expansions = 50;
+       $fuzzy_distance       = 3;
+       $tnt = new TNTSearch;
+
+       $tnt->loadConfig([
+           'driver'    => 'mysql',
+           'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
+           'database'  => 'ethikana',
+           'username'  => 'dbmasteruser',
+           'password'  => 'Amitayef5.7barikoi1216',
+           'storage'   => '/var/www/html/ethikana/storage/custom/'
+       ]);
+
+      $tnt->selectIndex("places.index");
+      $tnt->fuzziness = true;
+      //$tnt->asYouType = true;
+      $message = 'Someone  '.$request->search.' from website';
+      $this->SlackSearch($message);
+
+      if ($request->has('search')) {
+        $q = strtolower($request->search);
+
+        if ($place = Redis::get($q)) {
+          $place = json_decode($place);
+          return response()->Json([
+            'q'=> $q,
+            'places' => $place,
+            'source' => 'Cache'
+          ]);
+
+        }
+        // $place = $this->elasticSearch($q);
+        // if (count($place)>0) {
+        //
+        //    return response()->json(['source' => 'Elastic','places'=>$place]);
+        // }else{
+
+          $place = DB::connection('sqlite')->table('places_3')
+          ->where('flag',1)
+          ->where('new_address','Like','%'.$q.'%')
+          ->orWhere('alternate_address','Like','%'.$q.'%')
+          ->limit(10)->get(['id','Address','new_address','area','city','uCode']);
+          if (count($place)>0) {
+            Redis::setex($q, (60*24*60),$place);
+           return response()->json(['Source'=> 'sqlite','q'=> $q,'places'=>$place ]);
+         }else {
+           $q = preg_replace("/[(^)]/", " ",$q);
+           $q = preg_replace('/\s+/', ' ',$q);
+           $q = str_replace(",","",$q);
+           $place = DB::connection('sqlite')->table('places_3')
+           ->where('flag',1)
+           ->where('new_address','Like','%'.$q.'%')
+           ->orWhere('alternate_address','Like','%'.$q.'%')
+           ->limit(10)->get(['id','Address','new_address','area','city','uCode']);
+          if (count($place)>0) {
+
+             return response()->json(['q'=>$q,'Source'=> 'sqlite','places'=>$place ]);
+           }else {
+             $place = $this->uCodeSearch($q);
+             if (count($place)>0) {
+               Redis::set($q, $place);
+               return response()->json(['places'=>$place ]);
+             }
+             else {
+
+               $q = str_replace("  "," ",$q);
+               $q = str_replace("/"," ",$q);
+               $q = preg_replace("/[^A-Za-z0-9\s]/", "",$q);
+               $res = $tnt->searchBoolean($q,10);
+               if (count($res['ids'])>0) {
+
+                 $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','uCode']);
+
+                 return response()->json(['Q tnt search'=>$q ,'places' => $place]);
+               }else{
+                 $q = preg_replace("/[\/,-]/", " ", $q);
+                 $x = explode(" ",$q);
+                 $size = sizeof($x);
+                 if (count($size)>1) {
+                   $y=''.$x[sizeof($x)-2].' '.$x[sizeof($x)-1].'';
+                   $res = $tnt->searchBoolean($y,10);
+                 }else {
+                   $res = $tnt->searchBoolean($q,10);
+                 }
+                 if (count($res['ids'])>0) {
+                    $place = DB::table('places_3')->whereIn('id', $res['ids'])->where('flag','1')->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','uCode']);
+
+                    return response()->json(['y'=> $y,'places' => $place]);
+                  }else {
+
+                    $q = str_replace("  "," ",$q);
+
+                  //  $q = preg_replace('/\b\w\b(\s|.\s)?/', '', $q); //get rid of single letters
+                    $res = $tnt->search($q,10);
+                    if (count($res['ids'])>0) {
+                      $place = DB::table('places_3')->whereIn('id', $res['ids'])->orderByRaw(DB::raw("FIELD(id, ".implode(',' ,$res['ids']).")"))->get(['id','Address','new_address','area','city','uCode']);
+
+                      return response()->json(['String' => $q,'places' => $place, 'Source'=>'TNT']);
+                    }
+                    else {
+
+                      DB::table('Searchlytics')->insert(['query' => $q]);
+                      return response()->json([
+                        'message' => 'not found',
+                        'status' => '200',
+                        'Q Not Found'=> $q
+
+                      ]);
+                    }
+
+                  }
+
+//               }
+             }
+           }
+           }
+         }
+       }else {
+         return new JsonResponse([
+           'message' => 'empty request',
+         ]);
+       }
+
+    }
+
+
 
 
   public function searchAdmin(Request $request)
@@ -1012,15 +1222,14 @@ public function SearchAutocomplete(Request $request)
         $fuzzy_distance       = 3;
         $tnt = new TNTSearch;
 
-       $tnt->loadConfig([
-           'driver'    => 'mysql',
-           'host'      => 'localhost',
-           'database'  => 'ethikana',
-           'username'  => 'root',
-           'password'  => 'root',
-           'storage'   => '/var/www/html/ethikana/storage/custom/'
-       ]);
-
+        $tnt->loadConfig([
+            'driver'    => 'mysql',
+            'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
+            'database'  => 'ethikana',
+            'username'  => 'dbmasteruser',
+            'password'  => 'Amitayef5.7barikoi1216',
+            'storage'   => '/var/www/html/ethikana/storage/custom/'
+        ]);
        $tnt->selectIndex("places.index");
        $tnt->fuzziness = true;
        $tnt->asYouType = true;
@@ -1041,10 +1250,10 @@ public function SearchAutocomplete(Request $request)
          // if (count($place)>0) {
          //     return response()->json(['source' => 'Elastic','places'=>$place]);
          // }else{
-         $place = DB::connection('sqlite')->table('places_3')->where('Address','Like','%'.$q.'%')->limit(10)
+         $place = DB::table('places')->where('Address','Like','%'.$q.'%')->limit(10)
           ->get(['id','Address','area','city','postCode','uCode','longitude','latitude','pType','subType','updated_at','contact_person_phone','user_id']);
           if (count($place)>0) {
-             Redis::setex($q, 60*60*1,$place);
+            // Redis::setex($q, 60*60*1,$place);
              return response()->json(['q'=>$q,'Source '=> 'Database','places'=>$place ]);
            }else {
              $q = preg_replace("/[(^)]/", " ", $q);
@@ -1130,15 +1339,37 @@ public function SearchAutocomplete(Request $request)
   {
     //$q=$request->search;
     $q = $q;
-    $query = '54.254.209.206/api/search?q='.$q.'';
+    $query = 'elastic.barikoi.com/api/search?q='.$q.'';
     $client = new \GuzzleHttp\Client();
     $res = $client->request('POST', $query);
     $res = $res->getBody();
     $data = json_decode( $res, true );
+    //
+    // $st_code = $data->status_code;
+    // if ($st_code = 500) {
+    //   return null;
+    // }else{
     return $data;
+
+
   }
 
    public function linearsearch($q)
+   {
+     $place = DB::connection('sqlite')->table('places_3')
+     ->where('flag',1)
+     ->where('new_address','Like',$q.'%')
+     ->orWhere('alternate_address','Like',$q.'%')
+     ->limit(10)->get(['id','Address','new_address','alternate_address','area','city','postCode','uCode','route_description','longitude','latitude','pType','subType','updated_at','contact_person_phone']);
+     return $place;
+   }
+   public function linearsearchLocate($q)
+   {
+     $place = DB::select("SELECT Address,new_address,alternate_address, uCode, longitude,latitude,id,pType,subType,area from places_3 WHERE Locate(Address, '$q')");
+     return $place;
+   }
+
+   public function linearsearchlong($q)
    {
      $place = DB::connection('sqlite')->table('places_3')
      ->where('flag',1)
@@ -1166,14 +1397,14 @@ public function SearchAutocomplete(Request $request)
      $fuzzy_distance       = 2;
      $tnt = new TNTSearch;
 
-    $tnt->loadConfig([
-        'driver'    => 'mysql',
-        'host'      => 'localhost',
-        'database'  => 'ethikana',
-        'username'  => 'root',
-        'password'  => 'root',
-        'storage'   => '/var/www/html/ethikana/storage/custom/'
-    ]);
+     $tnt->loadConfig([
+         'driver'    => 'mysql',
+         'host'      => 'ls-f92239927d8abce6431333a5c33375fd67bc4025.ceyzgzybzzhb.ap-southeast-1.rds.amazonaws.com',
+         'database'  => 'ethikana',
+         'username'  => 'dbmasteruser',
+         'password'  => 'Amitayef5.7barikoi1216',
+         'storage'   => '/var/www/html/ethikana/storage/custom/'
+     ]);
 
     $tnt->selectIndex("places.index");
     $tnt->fuzziness = true;
@@ -1302,8 +1533,12 @@ public function SearchAutocomplete(Request $request)
   public function GeoCode($id)
   {
     $place = DB::table('places')->where('id',$id)->orWhere('uCode',$id)->get(['Address','area','city','postCode','uCode','longitude','latitude','pType','subType','contact_person_phone','updated_at']);
+
     if (count($place)>0) {
-      return $place->toJson();
+      $address = $place[0]->Address;
+      $message = ''.$address.' was selected from last search query';
+      $this->SlackSearch($message);
+      return response()->json($place);
     }else {
       return response()->json([
         'message' => 'not found',
@@ -1402,5 +1637,37 @@ public function SearchAutocomplete(Request $request)
 */
 
   }// end of function
+
+
+   public function isExactMatch($request, $result)
+   {
+       return strtolower($request->search) == strtolower($result->Address);
+   }
+
+   public function SlackSearch($message)
+   {
+     $channel = 'searchqueries';
+     $data = array(
+       'channel'     => $channel,
+       'username'    => 'tayef',
+       'text'        => $message
+
+     );
+    // sleep(2);
+     //Slack Webhook : notify
+     define('SLACK_WEBHOOK', 'https://hooks.slack.com/services/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');
+     // Make your message
+     $message_string = array('payload' => json_encode($data));
+     //$message = array('payload' => json_encode(array('text' => "New Message from".$name.",".$email.", Message: ".$Messsage. "")));
+     // Use curl to send your message
+     $c = curl_init(SLACK_WEBHOOK);
+     curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+     curl_setopt($c, CURLOPT_POST, true);
+     curl_setopt($c, CURLOPT_POSTFIELDS, $message_string);
+     curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+     $res = curl_exec($c);
+     curl_close($c);
+   }
+
 
 }

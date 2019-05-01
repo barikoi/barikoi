@@ -411,58 +411,58 @@ class UserProfileController extends Controller
     public function ContributorAddedPlaces(Request $request,$id)
     {
 
-      $today = Carbon::today()->toDateTimeString();
-      $lastsevenday = Carbon::today()->subDays(6);
+      // if($request->has('date')) {
+      //   $date = $request->date;
+      //   if($request->has('dateTo')) {
+      //     $dateTo = $request->$dateTo;
+      //   }
+      //   else {
+      //     $dateTo = $today;
+      //   }
+      //   if ($request->has('dateFrom')) {
+      //     $dateFrom = $request->dateFrom;
+      //   }
+      //   $newDate  = new Carbon($date);
+      //   $today = Carbon::today();
+      //   $Places = Place::with('images')->where('user_id',$id)
+      //   ->whereDate('created_at',$date)
+      //   ->get(['id','Address','area','pType','subType','longitude','latitude','uCode','created_at']);
+      //
+      //   $count = Place::where('user_id',$id)
+      //   ->whereDate('created_at',$date)
+      //   ->count();
+      //
+      //   $total = Place::where('user_id',$id)->count();
+      // //  ->whereDate('created_at',$today)
+      //
+      //   $lastWeek = Place::whereBetween('created_at',[$lastsevenday,$today])->count();
+      //
+      // }else {
+      //   $today = Carbon::today();
+      //   $Places = Place::with('images')->where('user_id',$id)
+      //   ->whereDate('created_at',$today)
+      //   ->get(['id','Address','area','pType','subType','longitude','latitude','uCode','created_at']);
+      //   $count = Place::where('user_id',$id)
+      //   ->whereDate('created_at',$today)
+      //   ->count();
+      //   $total = Place::where('user_id',$id)
+      // //  ->whereDate('created_at',$today)
+      //   ->count();
+      //   $lastWeek = Place::whereBetween('created_at',[$lastsevenday,$today])->count();
+      //
+      // }
 
-      if($request->has('date')) {
-        $date = $request->date;
-        if($request->has('dateTo')) {
-          $dateTo = $request->$dateTo;
-        }
-        else {
-          $dateTo = $today;
-        }
-        if ($request->has('dateFrom')) {
-          $dateFrom = $request->dateFrom;
-        }
-        $newDate  = new Carbon($date);
-        $today = Carbon::today();
-        $Places = Place::with('images')->where('user_id',$id)
-        ->whereDate('created_at',$date)
-        ->get(['id','Address','area','pType','subType','longitude','latitude','uCode','created_at']);
-
-        $count = Place::where('user_id',$id)
-        ->whereDate('created_at',$date)
-        ->count();
-
-        $total = Place::where('user_id',$id)->count();
-      //  ->whereDate('created_at',$today)
-
-        $lastWeek = Place::whereBetween('created_at',[$lastsevenday,$today])->count();
-
+      if ($request->has('dateFrom') && $request->has('dateTill')) {
+        $Places = Place::whereBetween('created_at',[$request->dateFrom,$request->dateTill])->where('user_id',$id)->get(['id','Address','area','pType','subType','longitude','latitude','uCode','user_id','created_at']);
+        return new JsonResponse([
+            'Message' => $Places,
+          ],200);
       }else {
-        $today = Carbon::today();
-        $Places = Place::with('images')->where('user_id',$id)
-        ->whereDate('created_at',$today)
-        ->get(['id','Address','area','pType','subType','longitude','latitude','uCode','created_at']);
-        $count = Place::where('user_id',$id)
-        ->whereDate('created_at',$today)
-        ->count();
-        $total = Place::where('user_id',$id)
-      //  ->whereDate('created_at',$today)
-        ->count();
-        $lastWeek = Place::whereBetween('created_at',[$lastsevenday,$today])->count();
-
+        return new JsonResponse([
+            'Message' => 'Parameter Missing',
+          ],404);
       }
-      return new JsonResponse([
-          'Message' => $Places,
-          'Count Todays' => $count,
-          'Todays Income' => $count*1,
-          'Total Income' =>  $total,
-          'Total Added' => $total,
-          'last Week' => $lastWeek,
 
-        ],200);
 
 
     }

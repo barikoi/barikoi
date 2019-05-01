@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use DB;
 use App\Place;
 use Illuminate\Support\Facades\Input;
+use Carbon\Carbon;
 class DataController extends Controller {
 
   /*
@@ -50,10 +51,10 @@ class DataController extends Controller {
         $area = 'Baridhara DOHS';
       }
       if ($subtype=='all') {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') )");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_ASTEXT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') )");
       }
       else {
-        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
+        $places = DB::select("SELECT id, Address, area, subType, pType, longitude,latitude, uCode,user_id,created_at,updated_at,ST_ASTEXT(location) FROM places WHERE st_within(location,(select area from Area where name='$area') ) and subType LIKE '%$subtype%'");
 
 
       }
@@ -69,12 +70,16 @@ class DataController extends Controller {
 
       if ($request->has('area')) {
         $area = $request->area;
-      //  $area = 'ST_GeomFromText(POLYGON(('$area')))'
       }
+    //   if ($requqest->has('table')) {
+    //     $table = $request->table;
+    //     $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,ST_AsWKT(location) FROM '$table' WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+    // }else {
+        $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
+  //    }
 
     //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, ST_AsWKT(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id, Address, area,subType, pType, longitude,latitude,uCode, user_id,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -88,12 +93,8 @@ class DataController extends Controller {
 
       if ($request->has('area')) {
         $area = $request->area;
-      //  $area = 'ST_GeomFromText(POLYGON(('$area')))'
       }
-
-
-    //  $places = DB::select("SELECT id, Address, subType, pType, longitude,latitude,uCode, ST_AsWKT(location) FROM places_2 WHERE st_within(location,(select area from Area where name='$area') ) and Address LIKE '%$address%' LIMIT 5");
-      $places = DB::select("SELECT id,  (longitude+0)  AS lng,(latitude+0) AS lat,Address, area,subType AS subtype, pType AS ptype,uCode, user_id AS userID,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
+    $places = DB::select("SELECT id,  (longitude+0)  AS lng,(latitude+0) AS lat,Address, area,subType AS subtype, pType AS ptype,uCode, user_id AS userID,created_at,updated_at,ST_AsWKT(location) FROM places WHERE st_within(location,ST_GeomFromText('POLYGON(($area))'))");
 
         return response()->json([
             'Total' => count($places),
@@ -131,10 +132,10 @@ class DataController extends Controller {
       {
         $polygon =$request->polygon;
         //$address = $request->address;
-
-        $places = DB::select("UPDATE places SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
-        $places = DB::select("UPDATE places_last_cleaned SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
-        $places = DB::select("UPDATE placesf SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $now = Carbon::now()->toDateTimeString();
+        $places = DB::select("UPDATE places SET Address = REPLACE(Address, '".$request->x."', '".$request->y."'), updated_at = '$now' WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+      //  $places = DB::select("UPDATE places_last_cleaned SET Address = REPLACE(Address, '".$request->x."', '".$request->y."') WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
+        $places = DB::select("UPDATE placesf SET Address = REPLACE(Address, '".$request->x."', '".$request->y."'), updated_at = '$now' WHERE st_within(location,(ST_GEOMFROMTEXT('POLYGON(($polygon))')) )");//and Address LIKE '%$address%'
 
           return response()->json([
               'Message' => 'Updated'
